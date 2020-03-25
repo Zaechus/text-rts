@@ -1,0 +1,9 @@
+[package]
+name = "text-rts"
+version = "0.1.0"
+authors = ["Maxwell Anderson <maxwell.brayden.anderson@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bracket-lib = { version = "0.7", features = ["serde", "threaded"]}
+legion = "0.2"
