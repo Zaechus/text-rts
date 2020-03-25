@@ -96,7 +96,7 @@ impl State {
 
         self.print_grid(ctx);
 
-        ctx.print(self.mouse.x, self.mouse.y, "^");
+        ctx.print(self.mouse.x, self.mouse.y, "<");
 
         self.print_mode(ctx);
 
