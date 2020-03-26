@@ -21,6 +21,7 @@ impl Unit {
         }
     }
 
+    /// Reduce the Unit's HP by the given value
     pub fn harm(&mut self, x: u32) {
         self.hp.0 -= x as i32;
     }

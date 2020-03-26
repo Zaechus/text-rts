@@ -35,14 +35,14 @@ impl GameCell {
             self.tic += 1;
 
             if self.tic % speed == 0 {
-                if self.point.x <= dest.x - 1 {
+                if self.point.x < dest.x {
                     self.point.x += 1;
-                } else if self.point.x >= dest.x + 1 {
+                } else if self.point.x > dest.x {
                     self.point.x -= 1;
                 }
-                if self.point.y <= dest.y - 1 {
+                if self.point.y < dest.y {
                     self.point.y += 1;
-                } else if self.point.y >= dest.y + 1 {
+                } else if self.point.y > dest.y {
                     self.point.y -= 1;
                 }
             }
@@ -54,6 +54,7 @@ impl GameCell {
         }
     }
 
+    /// Given any positive number, move the cell in one of the 4 cardinal directions
     pub fn bump(&mut self, n: usize) {
         let (a, b) = match n % 4 {
             0 => (-1, 0),
@@ -65,6 +66,7 @@ impl GameCell {
         self.point.y += b;
     }
 
+    /// Given a positive range value, return the range of the cell as a Rect
     pub fn range_rect(&self, r: u32) -> Rect {
         let r = r as i32;
         Rect::with_size(
@@ -75,13 +77,16 @@ impl GameCell {
         )
     }
 
+    /// Toggle the selected status of the cell
     pub fn select(&mut self) {
         self.selected = !self.selected;
     }
+    /// Deselect the cell
     pub fn deselect(&mut self) {
         self.selected = false
     }
 
+    /// Set the harmed status of the cell to true, causing it to appear red
     pub fn set_harmed(&mut self) {
         self.harmed = true;
     }
@@ -98,6 +103,7 @@ impl GameCell {
     pub fn symbol(&self) -> char {
         self.symbol
     }
+    /// Return the RGB color of the cell; if harmed return red
     pub fn color(&self) -> RGB {
         if self.harmed {
             RGB::named((255, 0, 0))
@@ -105,9 +111,11 @@ impl GameCell {
             self.color
         }
     }
+    /// Return a brightened version of the cell's color
     pub fn color_bright(&self) -> RGB {
         RGB::from_f32(self.color.r * 1.5, self.color.g * 1.5, self.color.b * 1.5)
     }
+    /// Return a black background for the cell, but black if selected
     pub fn bg_color(&self) -> RGB {
         if self.selected {
             RGB::from_u8(255, 255, 255)

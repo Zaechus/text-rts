@@ -251,15 +251,13 @@ impl State {
                 } else {
                     cell.deselect();
                 }
+            } else if self.selection.point_in_rect(Point::new(
+                cell.x() + self.offset.0,
+                cell.y() + self.offset.1,
+            )) {
+                cell.select();
             } else {
-                if self.selection.point_in_rect(Point::new(
-                    cell.x() + self.offset.0,
-                    cell.y() + self.offset.1,
-                )) {
-                    cell.select();
-                } else {
-                    cell.deselect();
-                }
+                cell.deselect();
             }
         }
     }
