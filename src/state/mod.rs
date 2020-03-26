@@ -44,14 +44,16 @@ impl State {
         for x in 0..10 {
             units.push((
                 GameCell::new(x + 10, 20 - (x & 1), 'V', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 20),
+                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(4),
             ));
         }
-        for x in 0..10 {
-            units.push((
-                GameCell::new(35 - (x & 1), 10 + x, '*', RGB::named(BROWN)),
-                Unit::new(Race::Bug, 10),
-            ));
+        for x in 0..5 {
+            for y in 0..30 {
+                units.push((
+                    GameCell::new(35 - (x & 1), 5 + y, '*', RGB::named(BROWN)),
+                    Unit::new(Race::Bug, 10),
+                ));
+            }
         }
         world.insert((), units.into_iter());
 
@@ -214,11 +216,11 @@ impl State {
     }
 
     fn bump_cells(&mut self) {
-        let query = <(Read<GameCell>,)>::query().filter(changed::<Unit>());
+        let query = <(Read<GameCell>,)>::query();
 
         let mut bumped = Vec::new();
         for (e, (cell,)) in query.iter_entities_immutable(&self.world) {
-            let query2 = <(Read<GameCell>,)>::query().filter(changed::<Unit>());
+            let query2 = <(Read<GameCell>,)>::query();
             let mut same = false;
             for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
                 if e != e2 && cell.x() == cell2.x() && cell.y() == cell2.y() {
@@ -267,17 +269,20 @@ impl State {
 
         for (mut cell, _) in query.iter(&mut self.world) {
             if cell.selected() {
-                cell.move_pos(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1);
+                cell.move_pos(Point::new(
+                    self.mouse.x - self.offset.0,
+                    self.mouse.y - self.offset.1,
+                ));
             }
         }
     }
 
     fn attack_units(&mut self) {
-        let query = <(Read<GameCell>, Read<Unit>)>::query().filter(changed::<Unit>());
+        let query = <(Read<GameCell>, Read<Unit>)>::query();
 
         let mut attacked = Vec::new();
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
-            let query2 = <(Read<GameCell>, Read<Unit>)>::query().filter(changed::<Unit>());
+            let query2 = <(Read<GameCell>, Read<Unit>)>::query();
             for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
                 if e != e2
                     && unit.race() != unit2.race()

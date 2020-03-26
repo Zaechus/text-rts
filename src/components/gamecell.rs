@@ -24,8 +24,8 @@ impl GameCell {
         }
     }
 
-    pub fn move_pos(&mut self, x: i32, y: i32) {
-        self.destination = Some(Point::new(x, y));
+    pub fn move_pos(&mut self, point: Point) {
+        self.destination = Some(point);
     }
 
     pub fn update(&mut self, speed: u32) {

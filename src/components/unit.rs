@@ -15,11 +15,23 @@ impl Unit {
         Self {
             race,
             hp: (hp, hp as u32),
-            speed: 4,
+            speed: 5,
             damage: 1,
-            range: 3,
+            range: 0,
         }
     }
+    pub fn with_speed(mut self, x: u32) -> Self {
+        self.speed = x;
+        self
+    }
+    pub fn with_damage(mut self, x: u32) -> Self {
+        self.damage = x;
+        self
+    }
+    // pub fn with_range(mut self, r: u32) -> Self {
+    //     self.range = r;
+    //     self
+    // }
 
     /// Reduce the Unit's HP by the given value
     pub fn harm(&mut self, x: u32) {
@@ -32,11 +44,11 @@ impl Unit {
     pub fn hp(&self) -> i32 {
         self.hp.0
     }
-    pub fn damage(&self) -> u32 {
-        self.damage
-    }
     pub fn speed(&self) -> u32 {
         self.speed
+    }
+    pub fn damage(&self) -> u32 {
+        self.damage
     }
     pub fn range(&self) -> u32 {
         self.range
