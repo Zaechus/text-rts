@@ -7,7 +7,9 @@ pub struct Unit {
     hp: (i32, u32),
     speed: u32,
     damage: u32,
+    attack_rate: u32,
     range: u32,
+    tic: u32,
 }
 
 impl Unit {
@@ -17,7 +19,9 @@ impl Unit {
             hp: (hp, hp as u32),
             speed: 5,
             damage: 1,
+            attack_rate: 50,
             range: 0,
+            tic: 0,
         }
     }
     pub fn with_speed(mut self, x: u32) -> Self {
@@ -38,6 +42,14 @@ impl Unit {
         self.hp.0 -= x as i32;
     }
 
+    pub fn tic(&mut self) {
+        if self.tic > 99 {
+            self.tic = 0;
+        } else {
+            self.tic += 1;
+        }
+    }
+
     pub fn race(&self) -> Race {
         self.race
     }
@@ -47,8 +59,12 @@ impl Unit {
     pub fn speed(&self) -> u32 {
         self.speed
     }
-    pub fn damage(&self) -> u32 {
-        self.damage
+    pub fn attack(&self) -> Option<u32> {
+        if self.tic % self.attack_rate == 0 {
+            Some(self.damage)
+        } else {
+            None
+        }
     }
     pub fn range(&self) -> u32 {
         self.range

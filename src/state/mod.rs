@@ -51,7 +51,7 @@ impl State {
             for y in 0..30 {
                 units.push((
                     GameCell::new(35 - (x & 1), 5 + y, '*', RGB::named(BROWN)),
-                    Unit::new(Race::Bug, 10),
+                    Unit::new(Race::Bug, 15),
                 ));
             }
         }
@@ -196,9 +196,9 @@ impl State {
     }
 
     fn update_cells(&mut self, ctx: &mut BTerm) {
-        let query = <(Write<GameCell>, Read<Unit>)>::query();
+        let query = <(Write<GameCell>, Write<Unit>)>::query();
 
-        for (mut cell, unit) in query.iter(&mut self.world) {
+        for (mut cell, mut unit) in query.iter(&mut self.world) {
             ctx.print_color(
                 cell.x() + self.offset.0,
                 cell.y() + self.offset.1,
@@ -212,6 +212,7 @@ impl State {
             );
 
             cell.update(unit.speed());
+            unit.tic();
         }
     }
 
@@ -288,8 +289,10 @@ impl State {
                     && unit.race() != unit2.race()
                     && cell.range_rect(unit.range()).point_in_rect(cell2.point())
                 {
-                    attacked.push((e2, unit.damage()));
-                    break;
+                    if let Some(damage) = unit.attack() {
+                        attacked.push((e2, damage));
+                        break;
+                    }
                 }
             }
         }
