@@ -27,6 +27,7 @@ pub struct State {
     curr_state: CurrentState,
     world: World,
     window_size: (u32, u32),
+    tic: u8,
     offset: (i32, i32),
     mouse: Point,
     mouse_pressed: bool,
@@ -61,6 +62,7 @@ impl State {
             curr_state: CurrentState::Menu,
             world,
             window_size: (w, h),
+            tic: 0,
             offset: (0, 0),
             mouse: Point::new(0, 0),
             mouse_pressed: false,
@@ -83,6 +85,11 @@ impl State {
     }
 
     fn play_state(&mut self, ctx: &mut BTerm) {
+        self.tic += 4;
+        if self.tic > 99 {
+            self.tic = 0;
+        }
+
         self.mouse = ctx.mouse_point();
 
         if ctx.left_click {
@@ -94,7 +101,13 @@ impl State {
 
         self.print_grid(ctx);
 
-        ctx.print(self.mouse.x, self.mouse.y, "<");
+        ctx.print_color(
+            self.mouse.x,
+            self.mouse.y,
+            RGB::named((0, 155 + self.tic, 0)),
+            RGB::new(),
+            "<",
+        );
 
         self.print_mode(ctx);
 
