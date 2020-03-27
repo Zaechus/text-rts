@@ -31,9 +31,13 @@ impl GameCell {
     pub fn update(&mut self, speed: u32) {
         self.harmed = false;
 
-        if let Some(dest) = self.destination {
+        if self.tic > 99 {
+            self.tic = 0;
+        } else {
             self.tic += 1;
+        }
 
+        if let Some(dest) = self.destination {
             if self.tic % speed == 0 {
                 if self.point.x < dest.x {
                     self.point.x += 1;
@@ -49,21 +53,26 @@ impl GameCell {
 
             if Rect::with_size(dest.x - 1, dest.y - 1, 2, 2).point_in_rect(self.point) {
                 self.destination = None;
-                self.tic = 0;
             }
         }
     }
 
     /// Given any positive number, move the cell in one of the 4 cardinal directions
-    pub fn bump(&mut self, n: usize) {
-        let (a, b) = match n % 4 {
-            0 => (-1, 0),
-            1 => (0, 1),
-            2 => (1, 0),
-            _ => (0, -1),
-        };
-        self.point.x += a;
-        self.point.y += b;
+    pub fn bump(&mut self, n: usize, speed: u32) {
+        if self.tic % speed == 0 {
+            let (a, b) = match n % 8 {
+                0 => (-1, 0),
+                1 => (1, 0),
+                2 => (0, 1),
+                3 => (0, -1),
+                4 => (-1, -1),
+                5 => (1, -1),
+                6 => (1, 1),
+                _ => (-1, 1),
+            };
+            self.point.x += a;
+            self.point.y += b;
+        }
     }
 
     /// Given a positive range value, return the range of the cell as a Rect

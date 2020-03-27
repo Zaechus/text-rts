@@ -16,6 +16,7 @@ pub enum CurrentState {
     Playing,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum Mode {
     Select,
     Move,
@@ -33,6 +34,7 @@ pub struct State {
     mouse_pressed: bool,
     mouse_released: bool,
     mode: Mode,
+    cursor: String,
     selection: Rect,
 }
 
@@ -68,6 +70,7 @@ impl State {
             mouse_pressed: false,
             mouse_released: false,
             mode: Mode::Select,
+            cursor: String::from("<"),
             selection: Rect::default(),
         }
     }
@@ -106,7 +109,7 @@ impl State {
             self.mouse.y,
             RGB::named((0, 155 + self.tic, 0)),
             RGB::new(),
-            "<",
+            &self.cursor,
         );
 
         self.print_mode(ctx);
@@ -170,7 +173,7 @@ impl State {
 
     fn print_grid(&mut self, ctx: &mut BTerm) {
         for x in 0..self.window_size.0 {
-            for y in 3..self.window_size.1 - 1 {
+            for y in 0..self.window_size.1 - 1 {
                 ctx.print_color(
                     x as i32,
                     y as i32,
@@ -232,26 +235,26 @@ impl State {
     }
 
     fn bump_cells(&mut self) {
-        let query = <(Read<GameCell>,)>::query();
+        let query = <(Read<GameCell>, Read<Unit>)>::query();
 
         let mut bumped = Vec::new();
-        for (e, (cell,)) in query.iter_entities_immutable(&self.world) {
-            let query2 = <(Read<GameCell>,)>::query();
+        for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
+            let query2 = <(Read<GameCell>, Read<Unit>)>::query();
             let mut same = false;
-            for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
+            for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
                 if e != e2 && cell.x() == cell2.x() && cell.y() == cell2.y() {
-                    bumped.push((e2, bumped.len()));
+                    bumped.push((e2, bumped.len(), unit2.speed()));
                     same = true;
                     break;
                 }
             }
             if same {
-                bumped.push((e, bumped.len()));
+                bumped.push((e, bumped.len(), unit.speed()));
             }
         }
-        for (e, dir) in bumped {
+        for (e, dir, speed) in bumped {
             if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
-                cell.bump(dir);
+                cell.bump(dir, speed);
             }
         }
     }
