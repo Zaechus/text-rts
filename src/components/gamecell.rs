@@ -58,9 +58,9 @@ impl GameCell {
     pub fn bump(&mut self, n: usize) {
         let (a, b) = match n % 4 {
             0 => (-1, 0),
-            1 => (1, 0),
-            2 => (0, -1),
-            _ => (0, 1),
+            1 => (0, 1),
+            2 => (1, 0),
+            _ => (0, -1),
         };
         self.point.x += a;
         self.point.y += b;
