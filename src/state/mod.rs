@@ -215,7 +215,9 @@ impl State {
             ctx.print_color(
                 cell.x() + self.offset.0,
                 cell.y() + self.offset.1,
-                if self.mouse.x == cell.x() && self.mouse.y == cell.y() {
+                if self.mouse.x - self.offset.0 == cell.x()
+                    && self.mouse.y - self.offset.1 == cell.y()
+                {
                     cell.color_bright()
                 } else {
                     cell.color()
