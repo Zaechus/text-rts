@@ -47,13 +47,17 @@ impl State {
         for x in 0..10 {
             units.push((
                 GameCell::new(x + 10, 20 - (x & 1), 'V', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(4),
+                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(5),
+            ));
+            units.push((
+                GameCell::new(x + 10, 22 - (x & 1), 'Y', RGB::named(GREEN)),
+                Unit::new(Race::Bionic, 40).with_damage(5).with_range(8),
             ));
         }
         for x in 0..5 {
             for y in 0..30 {
                 units.push((
-                    GameCell::new(35 - (x & 1), 5 + y, '*', RGB::named(BROWN)),
+                    GameCell::new(45 - (x & 1), 5 + y, '*', RGB::named(BROWN)),
                     Unit::new(Race::Bug, 15),
                 ));
             }
@@ -190,7 +194,6 @@ impl State {
         let mut color = RGB::new();
         let mut s = "";
         match self.mode {
-            Mode::Select => (),
             Mode::Move => {
                 w = 5;
                 color = RGB::from_u8(0, 175, 0);
@@ -206,6 +209,7 @@ impl State {
                 color = RGB::from_u8(0, 0, 175);
                 s = "Build";
             }
+            _ => (),
         }
         ctx.draw_box(0, 0, w, 2, color, color);
         ctx.print_color(1, 1, RGB::from_u8(255, 255, 255), color, s)
@@ -240,16 +244,12 @@ impl State {
         let mut bumped = Vec::new();
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
             let query2 = <(Read<GameCell>, Read<Unit>)>::query();
-            let mut same = false;
             for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
                 if e != e2 && cell.x() == cell2.x() && cell.y() == cell2.y() {
                     bumped.push((e2, bumped.len(), unit2.speed()));
-                    same = true;
+                    bumped.push((e, bumped.len(), unit.speed()));
                     break;
                 }
-            }
-            if same {
-                bumped.push((e, bumped.len(), unit.speed()));
             }
         }
         for (e, dir, speed) in bumped {
@@ -300,16 +300,22 @@ impl State {
         let query = <(Read<GameCell>, Read<Unit>)>::query();
 
         let mut attacked = Vec::new();
+        let mut moving = Vec::new();
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
             let query2 = <(Read<GameCell>, Read<Unit>)>::query();
             for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
-                if e != e2
-                    && unit.race() != unit2.race()
-                    && cell.range_rect(unit.range()).point_in_rect(cell2.point())
-                {
-                    if let Some(damage) = unit.attack() {
-                        attacked.push((e2, damage));
+                if e != e2 && unit.race() != unit2.race() {
+                    if cell.range_rect(unit.range()).point_in_rect(cell2.point()) {
+                        if let Some(damage) = unit.attack() {
+                            attacked.push((e2, damage));
+                        }
                         break;
+                    }
+                    if cell
+                        .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
+                        .point_in_rect(cell2.point())
+                    {
+                        moving.push((e, cell2.point()));
                     }
                 }
             }
@@ -321,6 +327,11 @@ impl State {
             }
             if let Some(unit) = self.world.get_component_mut::<Unit>(e).as_deref_mut() {
                 unit.harm(dmg);
+            }
+        }
+        for (e, pt) in moving {
+            if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
+                cell.move_towards(pt);
             }
         }
     }

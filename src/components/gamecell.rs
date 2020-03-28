@@ -27,11 +27,32 @@ impl GameCell {
     pub fn move_pos(&mut self, point: Point) {
         self.destination = Some(point);
     }
+    pub fn move_towards(&mut self, other: Point) {
+        if self.destination.is_none() {
+            let a = if self.point.x < other.x {
+                1
+            } else if self.point.x > other.x {
+                -1
+            } else {
+                0
+            };
+            let b = if self.point.y < other.y {
+                1
+            } else if self.point.y > other.y {
+                -1
+            } else {
+                0
+            };
+            self.destination = Some(Point::new(self.point.x + a, self.point.y + b));
+        }
+    }
 
     pub fn update(&mut self, speed: u32) {
-        self.harmed = false;
+        if self.tic % 51 == 0 {
+            self.harmed = false;
+        }
 
-        if self.tic > 99 {
+        if self.tic > 199 {
             self.tic = 0;
         } else {
             self.tic += 1;

@@ -17,7 +17,7 @@ impl Unit {
         Self {
             race,
             hp: (hp, hp as u32),
-            speed: 5,
+            speed: 6,
             damage: 1,
             attack_rate: 50,
             range: 0,
@@ -32,10 +32,10 @@ impl Unit {
         self.damage = x;
         self
     }
-    // pub fn with_range(mut self, r: u32) -> Self {
-    //     self.range = r;
-    //     self
-    // }
+    pub fn with_range(mut self, r: u32) -> Self {
+        self.range = r;
+        self
+    }
 
     /// Reduce the Unit's HP by the given value
     pub fn harm(&mut self, x: u32) {
