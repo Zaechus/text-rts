@@ -51,7 +51,7 @@ impl State {
             ));
             units.push((
                 GameCell::new(x + 10, 22 - (x & 1), 'Y', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 40).with_damage(5).with_range(8),
+                Unit::new(Race::Bionic, 40).with_damage(5).with_range(10),
             ));
         }
         for x in 0..5 {
