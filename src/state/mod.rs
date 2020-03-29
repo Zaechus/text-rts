@@ -243,12 +243,9 @@ impl State {
 
         let mut bumped = Vec::new();
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
-            let query2 = <(Read<GameCell>, Read<Unit>)>::query();
-            for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
+            let query2 = <(Read<GameCell>,)>::query();
+            for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
                 if e != e2 && cell.x() == cell2.x() && cell.y() == cell2.y() {
-                    if unit.race() == unit2.race() {
-                        bumped.push((e2, bumped.len(), unit2.speed()));
-                    }
                     bumped.push((e, bumped.len(), unit.speed()));
                     break;
                 }

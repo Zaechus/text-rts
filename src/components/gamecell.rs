@@ -72,7 +72,7 @@ impl GameCell {
                 }
             }
 
-            if Rect::with_size(dest.x - 1, dest.y - 1, 2, 2).point_in_rect(self.point) {
+            if self.point == dest {
                 self.destination = None;
             }
         }
