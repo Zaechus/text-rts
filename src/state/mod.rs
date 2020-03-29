@@ -44,7 +44,7 @@ impl State {
         let mut world = universe.create_world();
 
         let mut units = Vec::new();
-        for x in 0..10 {
+        for x in 0..15 {
             units.push((
                 GameCell::new(x + 10, 20 - (x & 1), 'V', RGB::named(GREEN)),
                 Unit::new(Race::Bionic, 30).with_damage(5).with_speed(5),
@@ -116,9 +116,9 @@ impl State {
             &self.cursor,
         );
 
-        self.print_mode(ctx);
-
         self.update_cells(ctx);
+
+        self.print_mode(ctx);
 
         self.bump_cells();
 
@@ -245,15 +245,15 @@ impl State {
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
             let query2 = <(Read<GameCell>,)>::query();
             for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
-                if e != e2 && cell.x() == cell2.x() && cell.y() == cell2.y() {
-                    bumped.push((e, bumped.len(), unit.speed()));
+                if e != e2 && cell.point() == cell2.point() {
+                    bumped.push((e, unit.speed()));
                     break;
                 }
             }
         }
-        for (e, dir, speed) in bumped {
+        for (e, speed) in bumped {
             if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
-                cell.bump(dir, speed);
+                cell.bump(speed);
             }
         }
     }

@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use bracket_lib::prelude::*;
 
 #[derive(Clone, Debug)]
@@ -79,17 +81,22 @@ impl GameCell {
     }
 
     /// Given any positive number, move the cell in one of the 4 cardinal directions
-    pub fn bump(&mut self, n: usize, speed: u32) {
+    pub fn bump(&mut self, speed: u32) {
         if self.tic % speed == 0 {
-            let (a, b) = match n % 8 {
-                0 => (-1, 0),
-                1 => (1, 0),
-                2 => (0, 1),
-                3 => (0, -1),
-                4 => (-1, -1),
-                5 => (1, -1),
-                6 => (1, 1),
-                _ => (-1, 1),
+            let (a, b) = match SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("time oops")
+                .as_micros()
+                % 8
+            {
+                0 => (0, -1),
+                1 => (1, -1),
+                2 => (1, 0),
+                3 => (1, 1),
+                4 => (0, 1),
+                5 => (-1, 1),
+                6 => (-1, 0),
+                _ => (-1, -1),
             };
             self.point.x += a;
             self.point.y += b;
