@@ -48,6 +48,9 @@ impl GameCell {
             self.destination = Some(Point::new(self.point.x + a, self.point.y + b));
         }
     }
+    // pub fn stop_moving(&mut self) {
+    //     self.destination = None;
+    // }
 
     pub fn update(&mut self, speed: u32) {
         if self.tic % 51 == 0 {

@@ -7,8 +7,8 @@ use crate::{
     types::Race,
 };
 
-const BROWN: (u8, u8, u8) = (170, 20, 0);
-const GREEN: (u8, u8, u8) = (0, 200, 0);
+const BROWN: (u8, u8, u8) = (170, 30, 0);
+const GREEN: (u8, u8, u8) = (0, 170, 0);
 
 #[derive(Clone, Debug)]
 pub enum CurrentState {
@@ -44,20 +44,20 @@ impl State {
         let mut world = universe.create_world();
 
         let mut units = Vec::new();
-        for x in 0..15 {
+        for x in 0..20 {
             units.push((
-                GameCell::new(x + 10, 20 - (x & 1), 'V', RGB::named(GREEN)),
+                GameCell::new(10 - (x & 1), x + 5, 'V', RGB::named(GREEN)),
                 Unit::new(Race::Bionic, 30).with_damage(5).with_speed(5),
             ));
             units.push((
-                GameCell::new(x + 10, 22 - (x & 1), 'Y', RGB::named(GREEN)),
+                GameCell::new(7 - (x & 1), x + 5, 'Y', RGB::named(GREEN)),
                 Unit::new(Race::Bionic, 40).with_damage(5).with_range(10),
             ));
         }
-        for x in 0..5 {
-            for y in 0..30 {
+        for _ in 0..6 {
+            for y in 0..20 {
                 units.push((
-                    GameCell::new(45 - (x & 1), 5 + y, '*', RGB::named(BROWN)),
+                    GameCell::new(45, 5 + y, '*', RGB::named(BROWN)),
                     Unit::new(Race::Bug, 15),
                 ));
             }
@@ -127,11 +127,10 @@ impl State {
         if self.mouse_released {
             match self.mode {
                 Mode::Select => self.select_cells(),
-                Mode::Move => {
+                Mode::Move | Mode::Attack => {
                     self.move_cells();
                     self.mode = Mode::Select;
                 }
-                Mode::Attack => (),
                 Mode::Build => (),
             }
         }
@@ -298,29 +297,40 @@ impl State {
     fn attack_units(&mut self) {
         let query = <(Read<GameCell>, Read<Unit>)>::query();
 
-        let mut attacked = Vec::new();
-        let mut moving = Vec::new();
+        let mut attacked_units = Vec::new();
+        let mut moving_units = Vec::new();
         for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
             let query2 = <(Read<GameCell>, Read<Unit>)>::query();
+            let mut attacked = false;
             for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
-                if e != e2 && unit.race() != unit2.race() {
-                    if cell.range_rect(unit.range()).point_in_rect(cell2.point()) {
-                        if let Some(damage) = unit.attack() {
-                            attacked.push((e2, damage));
-                        }
-                        break;
+                if e != e2
+                    && unit.race() != unit2.race()
+                    && cell.range_rect(unit.range()).point_in_rect(cell2.point())
+                {
+                    if let Some(damage) = unit.attack() {
+                        attacked_units.push((e2, damage));
                     }
-                    if cell
-                        .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
-                        .point_in_rect(cell2.point())
-                    {
-                        moving.push((e, cell2.point()));
+                    attacked = true;
+                    break;
+                }
+            }
+            if !attacked {
+                let query2 = <(Read<GameCell>, Read<Unit>)>::query();
+                for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
+                    if e != e2 && unit.race() != unit2.race() {
+                        if cell
+                            .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
+                            .point_in_rect(cell2.point())
+                        {
+                            moving_units.push((e, cell2.point()));
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        for (e, dmg) in attacked {
+        for (e, dmg) in attacked_units {
             if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
                 cell.set_harmed();
             }
@@ -328,7 +338,7 @@ impl State {
                 unit.harm(dmg);
             }
         }
-        for (e, pt) in moving {
+        for (e, pt) in moving_units {
             if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
                 cell.move_towards(pt);
             }
