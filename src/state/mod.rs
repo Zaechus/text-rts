@@ -331,14 +331,14 @@ impl State {
             if !attacked {
                 let query2 = <(Read<GameCell>, Read<Unit>)>::query();
                 for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
-                    if e != e2 && unit.race() != unit2.race() {
-                        if cell
+                    if e != e2
+                        && unit.race() != unit2.race()
+                        && cell
                             .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
                             .point_in_rect(cell2.point())
-                        {
-                            moving_units.push((e, cell2.point()));
-                            break;
-                        }
+                    {
+                        moving_units.push((e, cell2.point()));
+                        break;
                     }
                 }
             }
