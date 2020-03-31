@@ -24,6 +24,8 @@ enum Mode {
     Build,
 }
 
+add_wasm_support!();
+
 pub struct State {
     curr_state: CurrentState,
     world: World,
@@ -31,8 +33,8 @@ pub struct State {
     tic: u8,
     offset: (i32, i32),
     mouse: Point,
-    mouse_pressed: bool,
-    mouse_released: bool,
+    mouse_click: Option<(usize, bool)>,
+    mouse_pressed: (usize, bool),
     mode: Mode,
     cursor: String,
     selection: Rect,
@@ -71,8 +73,8 @@ impl State {
             tic: 0,
             offset: (0, 0),
             mouse: Point::new(0, 0),
-            mouse_pressed: false,
-            mouse_released: false,
+            mouse_click: None,
+            mouse_pressed: (0, false),
             mode: Mode::Select,
             cursor: String::from("<"),
             selection: Rect::default(),
@@ -92,19 +94,21 @@ impl State {
     }
 
     fn play_state(&mut self, ctx: &mut BTerm) {
+        let mut input = INPUT.lock();
+
+        input.for_each_message(|event| match event {
+            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
+            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false),
+            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true),
+            _ => (),
+        });
+
         self.tic += 4;
         if self.tic > 99 {
             self.tic = 0;
         }
 
         self.mouse = ctx.mouse_point();
-
-        if ctx.left_click {
-            if self.mouse_pressed {
-                self.mouse_released = true;
-            }
-            self.mouse_pressed = !self.mouse_pressed;
-        }
 
         self.print_grid(ctx);
 
@@ -124,38 +128,33 @@ impl State {
 
         self.attack_units();
 
-        if self.mouse_released {
-            match self.mode {
+        match self.mouse_click {
+            Some((0, false)) => match self.mode {
                 Mode::Select => self.select_cells(),
                 Mode::Move | Mode::Attack => {
                     self.move_cells();
                     self.mode = Mode::Select;
                 }
                 Mode::Build => (),
+            },
+            Some((1, false)) => {
+                self.move_cells();
+                self.mode = Mode::Select;
             }
+            Some((0, true)) => {
+                self.selection.x1 = self.mouse.x;
+                self.selection.y1 = self.mouse.y;
+            }
+            _ => (),
         }
 
         self.key_input(ctx);
 
         self.clear_cells();
 
-        if ctx.left_click {
-            self.selection.x1 = self.mouse.x;
-            self.selection.y1 = self.mouse.y;
-        }
-        if self.mouse_pressed {
-            self.selection.x2 = self.mouse.x;
-            self.selection.y2 = self.mouse.y;
-            ctx.draw_hollow_box(
-                self.selection.x1,
-                self.selection.y1,
-                self.selection.width(),
-                self.selection.height(),
-                RGB::named(GREEN),
-                RGB::new(),
-            );
-        }
-        self.mouse_released = false;
+        self.draw_highlight_box(ctx);
+
+        self.mouse_click = None;
     }
 
     fn key_input(&mut self, ctx: &mut BTerm) {
@@ -171,6 +170,21 @@ impl State {
                 VirtualKeyCode::Right => self.offset.0 -= 1,
                 _ => (),
             }
+        }
+    }
+
+    fn draw_highlight_box(&mut self, ctx: &mut BTerm) {
+        if self.mouse_pressed == (0, true) {
+            self.selection.x2 = self.mouse.x;
+            self.selection.y2 = self.mouse.y;
+            ctx.draw_hollow_box(
+                self.selection.x1,
+                self.selection.y1,
+                self.selection.width(),
+                self.selection.height(),
+                RGB::named(GREEN),
+                RGB::new(),
+            );
         }
     }
 

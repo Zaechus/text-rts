@@ -117,9 +117,9 @@ impl GameCell {
         )
     }
 
-    /// Toggle the selected status of the cell
+    /// Select the cell
     pub fn select(&mut self) {
-        self.selected = !self.selected;
+        self.selected = true;
     }
     /// Deselect the cell
     pub fn deselect(&mut self) {

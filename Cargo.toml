@@ -5,5 +5,5 @@ authors = ["Maxwell Anderson <maxwell.brayden.anderson@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bracket-lib = { version = "0.7", features = ["threaded"]}
+bracket-lib = { git = "https://github.com/thebracket/bracket-lib", features = ["threaded"]}
 legion = "0.2"
