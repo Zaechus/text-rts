@@ -16,6 +16,7 @@ const GREEN: (u8, u8, u8) = (0, 170, 0);
 pub enum CurrentState {
     Menu,
     Playing,
+    Quitting,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -148,7 +149,7 @@ impl State {
                 VirtualKeyCode::Down => self.offset.1 -= 1,
                 VirtualKeyCode::Left => self.offset.0 += 1,
                 VirtualKeyCode::Right => self.offset.0 -= 1,
-                VirtualKeyCode::End => ctx.quit(),
+                VirtualKeyCode::End => self.curr_state = CurrentState::Quitting,
                 _ => (),
             }
         }
@@ -376,6 +377,16 @@ impl State {
             self.world.delete(*e);
         }
     }
+
+    fn quit_state(&mut self, ctx: &mut BTerm) {
+        ctx.print(5, 5, "Are you sure you want to quit? (y/n)");
+
+        if let Some(VirtualKeyCode::Y) = ctx.key {
+            ctx.quit();
+        } else if let Some(VirtualKeyCode::N) = ctx.key {
+            self.curr_state = CurrentState::Playing;
+        }
+    }
 }
 
 impl GameState for State {
@@ -401,6 +412,7 @@ impl GameState for State {
         match self.curr_state {
             CurrentState::Menu => self.menu_state(ctx),
             CurrentState::Playing => self.play_state(ctx),
+            CurrentState::Quitting => self.quit_state(ctx),
         }
 
         self.mouse_click = None;
