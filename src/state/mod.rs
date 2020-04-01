@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use bracket_lib::prelude::*;
 
 use legion::prelude::*;
@@ -56,7 +58,7 @@ impl State {
                 Unit::new(Race::Bionic, 40).with_damage(5).with_range(10),
             ));
         }
-        for _ in 0..6 {
+        for _ in 0..5 {
             for y in 0..20 {
                 units.push((
                     GameCell::new(45, 5 + y, '*', RGB::named(BROWN)),
@@ -124,9 +126,7 @@ impl State {
 
         self.print_mode(ctx);
 
-        self.bump_cells();
-
-        self.attack_units();
+        self.bump_attack_clear_units();
 
         match self.mouse_click {
             Some((0, false)) => match self.mode {
@@ -150,8 +150,6 @@ impl State {
 
         self.key_input(ctx);
 
-        self.clear_cells();
-
         self.draw_highlight_box(ctx);
 
         self.mouse_click = None;
@@ -168,6 +166,7 @@ impl State {
                 VirtualKeyCode::Down => self.offset.1 -= 1,
                 VirtualKeyCode::Left => self.offset.0 += 1,
                 VirtualKeyCode::Right => self.offset.0 -= 1,
+                VirtualKeyCode::End => ctx.quit(),
                 _ => (),
             }
         }
@@ -177,9 +176,19 @@ impl State {
         if self.mouse_pressed == (0, true) {
             self.selection.x2 = self.mouse.x;
             self.selection.y2 = self.mouse.y;
+            let x = if self.selection.x1 <= self.selection.x2 {
+                self.selection.x1
+            } else {
+                self.selection.x2
+            };
+            let y = if self.selection.y1 <= self.selection.y2 {
+                self.selection.y1
+            } else {
+                self.selection.y2
+            };
             ctx.draw_hollow_box(
-                self.selection.x1,
-                self.selection.y1,
+                x,
+                y,
                 self.selection.width(),
                 self.selection.height(),
                 RGB::named(GREEN),
@@ -232,42 +241,31 @@ impl State {
         let query = <(Write<GameCell>, Write<Unit>)>::query();
 
         for (mut cell, mut unit) in query.iter(&mut self.world) {
-            ctx.print_color(
-                cell.x() + self.offset.0,
-                cell.y() + self.offset.1,
-                if self.mouse.x - self.offset.0 == cell.x()
-                    && self.mouse.y - self.offset.1 == cell.y()
-                {
-                    cell.color_bright()
-                } else {
-                    cell.color()
-                },
-                cell.bg_color(),
-                &cell.symbol().to_string(),
-            );
+            if Rect::with_exact(
+                -self.offset.0,
+                -self.offset.1,
+                self.window_size.0 as i32 - self.offset.0,
+                self.window_size.1 as i32 - self.offset.1,
+            )
+            .point_in_rect(cell.point())
+            {
+                ctx.print_color(
+                    cell.x() + self.offset.0,
+                    cell.y() + self.offset.1,
+                    if self.mouse.x - self.offset.0 == cell.x()
+                        && self.mouse.y - self.offset.1 == cell.y()
+                    {
+                        cell.color_bright()
+                    } else {
+                        cell.color()
+                    },
+                    cell.bg_color(),
+                    &cell.symbol().to_string(),
+                );
+            }
 
             cell.update(unit.speed());
             unit.tic();
-        }
-    }
-
-    fn bump_cells(&mut self) {
-        let query = <(Read<GameCell>, Read<Unit>)>::query();
-
-        let mut bumped = Vec::new();
-        for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
-            let query2 = <(Read<GameCell>,)>::query();
-            for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
-                if e != e2 && cell.point() == cell2.point() {
-                    bumped.push((e, unit.speed()));
-                    break;
-                }
-            }
-        }
-        for (e, speed) in bumped {
-            if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
-                cell.bump(speed);
-            }
         }
     }
 
@@ -284,13 +282,31 @@ impl State {
                 } else {
                     cell.deselect();
                 }
-            } else if self.selection.point_in_rect(Point::new(
-                cell.x() + self.offset.0,
-                cell.y() + self.offset.1,
-            )) {
-                cell.select();
             } else {
-                cell.deselect();
+                let x = if self.selection.x1 <= self.selection.x2 {
+                    self.selection.x1
+                } else {
+                    self.selection.x2
+                };
+                let y = if self.selection.y1 <= self.selection.y2 {
+                    self.selection.y1
+                } else {
+                    self.selection.y2
+                };
+                if Rect::with_size(
+                    x,
+                    y,
+                    self.selection.width() + 1,
+                    self.selection.height() + 1,
+                )
+                .point_in_rect(Point::new(
+                    cell.x() + self.offset.0,
+                    cell.y() + self.offset.1,
+                )) {
+                    cell.select();
+                } else {
+                    cell.deselect();
+                }
             }
         }
     }
@@ -308,12 +324,21 @@ impl State {
         }
     }
 
-    fn attack_units(&mut self) {
+    fn bump_attack_clear_units(&mut self) {
         let query = <(Read<GameCell>, Read<Unit>)>::query();
 
-        let mut attacked_units = Vec::new();
-        let mut moving_units = Vec::new();
-        for (e, (cell, unit)) in query.iter_entities_immutable(&self.world) {
+        let bumped = Arc::new(Mutex::new(Vec::new()));
+        let attacked_units = Arc::new(Mutex::new(Vec::new()));
+        let moving_units = Arc::new(Mutex::new(Vec::new()));
+        let deleted = Arc::new(Mutex::new(Vec::new()));
+        query.par_entities_for_each_immutable(&self.world, |(e, (cell, unit))| {
+            let query2 = <(Read<GameCell>,)>::query();
+            for (e2, (cell2,)) in query2.iter_entities_immutable(&self.world) {
+                if e != e2 && cell.point() == cell2.point() {
+                    bumped.lock().unwrap().push((e, unit.speed()));
+                    break;
+                }
+            }
             let query2 = <(Read<GameCell>, Read<Unit>)>::query();
             let mut attacked = false;
             for (e2, (cell2, unit2)) in query2.iter_entities_immutable(&self.world) {
@@ -322,7 +347,7 @@ impl State {
                     && cell.range_rect(unit.range()).point_in_rect(cell2.point())
                 {
                     if let Some(damage) = unit.attack() {
-                        attacked_units.push((e2, damage));
+                        attacked_units.lock().unwrap().push((e2, damage));
                     }
                     attacked = true;
                     break;
@@ -337,39 +362,36 @@ impl State {
                             .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
                             .point_in_rect(cell2.point())
                     {
-                        moving_units.push((e, cell2.point()));
+                        moving_units.lock().unwrap().push((e, cell2.point()));
                         break;
                     }
                 }
             }
-        }
+            if unit.hp() <= 0 {
+                deleted.lock().unwrap().push(e);
+            }
+        });
 
-        for (e, dmg) in attacked_units {
-            if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
+        for (e, speed) in bumped.lock().unwrap().iter() {
+            if let Some(cell) = self.world.get_component_mut::<GameCell>(*e).as_deref_mut() {
+                cell.bump(*speed);
+            }
+        }
+        for (e, dmg) in attacked_units.lock().unwrap().iter() {
+            if let Some(cell) = self.world.get_component_mut::<GameCell>(*e).as_deref_mut() {
                 cell.set_harmed();
             }
-            if let Some(unit) = self.world.get_component_mut::<Unit>(e).as_deref_mut() {
-                unit.harm(dmg);
+            if let Some(unit) = self.world.get_component_mut::<Unit>(*e).as_deref_mut() {
+                unit.harm(*dmg);
             }
         }
-        for (e, pt) in moving_units {
-            if let Some(cell) = self.world.get_component_mut::<GameCell>(e).as_deref_mut() {
-                cell.move_towards(pt);
+        for (e, pt) in moving_units.lock().unwrap().iter() {
+            if let Some(cell) = self.world.get_component_mut::<GameCell>(*e).as_deref_mut() {
+                cell.move_towards(*pt);
             }
         }
-    }
-
-    fn clear_cells(&mut self) {
-        let query = <(Read<Unit>,)>::query().filter(changed::<Unit>());
-
-        let mut deleted = Vec::new();
-        for (e, (unit,)) in query.iter_entities_immutable(&self.world) {
-            if unit.hp() <= 0 {
-                deleted.push(e);
-            }
-        }
-        for e in deleted {
-            self.world.delete(e);
+        for e in deleted.lock().unwrap().iter() {
+            self.world.delete(*e);
         }
     }
 }
