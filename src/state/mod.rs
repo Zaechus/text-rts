@@ -96,22 +96,6 @@ impl State {
     }
 
     fn play_state(&mut self, ctx: &mut BTerm) {
-        let mut input = INPUT.lock();
-
-        input.for_each_message(|event| match event {
-            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
-            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false),
-            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true),
-            _ => (),
-        });
-
-        self.tic += 4;
-        if self.tic > 99 {
-            self.tic = 0;
-        }
-
-        self.mouse = ctx.mouse_point();
-
         self.print_grid(ctx);
 
         ctx.print_color(
@@ -151,8 +135,6 @@ impl State {
         self.key_input(ctx);
 
         self.draw_highlight_box(ctx);
-
-        self.mouse_click = None;
     }
 
     fn key_input(&mut self, ctx: &mut BTerm) {
@@ -400,9 +382,27 @@ impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
         ctx.cls();
 
+        let mut input = INPUT.lock();
+
+        input.for_each_message(|event| match event {
+            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
+            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false),
+            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true),
+            _ => (),
+        });
+
+        self.tic += 4;
+        if self.tic > 99 {
+            self.tic = 0;
+        }
+
+        self.mouse = ctx.mouse_point();
+
         match self.curr_state {
             CurrentState::Menu => self.menu_state(ctx),
             CurrentState::Playing => self.play_state(ctx),
         }
+
+        self.mouse_click = None;
     }
 }

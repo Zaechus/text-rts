@@ -1,6 +1,9 @@
 run:
     cargo run --release
 
+console:
+    cargo run --no-default-features --features console
+
 test:
     cargo clippy
     cargo test

@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Maxwell Anderson <maxwell.brayden.anderson@gmail.com>"]
 edition = "2018"
 
+[features]
+default = [ "bracket-lib/opengl" ]
+console = [ "bracket-lib/crossterm" ]
+
 [dependencies]
-bracket-lib = { git = "https://github.com/thebracket/bracket-lib", features = ["threaded"]}
 legion = "0.2"
+bracket-lib = { git = "https://github.com/thebracket/bracket-lib", optional = true, default-features = false, features = [ "threaded" ] }
