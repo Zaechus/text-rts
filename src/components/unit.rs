@@ -17,7 +17,7 @@ impl Unit {
         Self {
             race,
             hp: (hp, hp as u32),
-            speed: 6,
+            speed: 4,
             damage: 1,
             attack_rate: 50,
             range: 0,
