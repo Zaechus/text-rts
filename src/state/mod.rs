@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 use bracket_lib::prelude::*;
@@ -20,19 +21,19 @@ pub enum CurrentState {
     Quitting,
 }
 
-add_wasm_support!();
-
 pub struct State {
     curr_state: CurrentState,
     world: World,
     schedule: Schedule,
     window_size: (u32, u32),
     tic: u8,
-    dt: (Instant, f32),
+    dt: f32,
+    #[cfg(not(target_arch = "wasm32"))]
+    instant: Instant,
     offset: (i32, i32),
     mouse: Point,
     mouse_click: Option<(usize, bool)>,
-    mouse_pressed: (usize, bool),
+    mouse_pressed: (usize, bool, bool),
     mode: Mode,
     cursor: String,
     selection: Rect,
@@ -174,12 +175,14 @@ impl State {
             world,
             schedule,
             window_size: (w, h),
-            dt: (Instant::now(), 1.0),
+            dt: 0.016,
+            #[cfg(not(target_arch = "wasm32"))]
+            instant: Instant::now(),
             tic: 0,
             offset: (0, 0),
             mouse: Point::new(0, 0),
             mouse_click: None,
-            mouse_pressed: (0, false),
+            mouse_pressed: (0, false, false),
             mode: Mode::Select,
             cursor: String::from("<"),
             selection: Rect::default(),
@@ -243,10 +246,6 @@ impl State {
                 self.move_cells(Mode::Move);
                 self.set_mode(Mode::Select);
             }
-            Some((0, true)) => {
-                self.selection.x1 = self.mouse.x;
-                self.selection.y1 = self.mouse.y;
-            }
             _ => (),
         }
     }
@@ -269,9 +268,9 @@ impl State {
     }
 
     fn draw_highlight_box(&mut self, ctx: &mut BTerm) {
-        if self.mouse_pressed == (0, true) {
-            self.selection.x2 = self.mouse.x;
-            self.selection.y2 = self.mouse.y;
+        self.selection.x2 = self.mouse.x;
+        self.selection.y2 = self.mouse.y;
+        if self.mouse_pressed.0 == 0 && self.mouse_pressed.1 {
             let x = if self.selection.x1 <= self.selection.x2 {
                 self.selection.x1
             } else {
@@ -290,6 +289,9 @@ impl State {
                 RGB::named(GREEN),
                 RGB::new(),
             );
+        } else {
+            self.selection.x1 = self.mouse.x;
+            self.selection.y1 = self.mouse.y;
         }
     }
 
@@ -360,8 +362,8 @@ impl State {
                 );
             }
 
-            cell.update(self.dt.1, unit.speed());
-            unit.tic(self.dt.1);
+            cell.update(self.dt, unit.speed());
+            unit.tic(self.dt);
         }
     }
 
@@ -429,25 +431,56 @@ impl State {
             self.curr_state = CurrentState::Playing;
         }
     }
-}
 
-impl GameState for State {
-    fn tick(&mut self, ctx: &mut BTerm) {
-        self.dt = (
-            Instant::now(),
-            Instant::now().duration_since(self.dt.0).as_secs_f32(),
-        );
+    #[cfg(target_arch = "wasm32")]
+    fn update_dt(&self) {}
+    #[cfg(not(target_arch = "wasm32"))]
+    fn update_dt(&mut self) {
+        self.dt = Instant::now().duration_since(self.instant).as_secs_f32();
+        self.instant = Instant::now();
+    }
 
-        ctx.cls();
+    #[cfg(target_arch = "wasm32")]
+    fn get_input(&mut self) {
+        self.mouse_pressed.2 = false;
 
         let mut input = INPUT.lock();
 
         input.for_each_message(|event| match event {
             BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
-            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false),
-            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true),
+            BEvent::MouseButtonUp { button } => {
+                self.mouse_pressed = (button, false, self.mouse_pressed.1)
+            }
+            BEvent::MouseButtonDown { button } => {
+                self.mouse_pressed = (button, true, self.mouse_pressed.1)
+            }
             _ => (),
         });
+
+        if !self.mouse_pressed.1 && self.mouse_pressed.2 {
+            self.mouse_click = Some((self.mouse_pressed.0, false))
+        }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    fn get_input(&mut self) {
+        let mut input = INPUT.lock();
+
+        input.for_each_message(|event| match event {
+            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
+            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false, false),
+            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true, false),
+            _ => (),
+        });
+    }
+}
+
+impl GameState for State {
+    fn tick(&mut self, ctx: &mut BTerm) {
+        self.update_dt();
+
+        ctx.cls();
+
+        self.get_input();
 
         self.tic += 4;
         if self.tic > 99 {

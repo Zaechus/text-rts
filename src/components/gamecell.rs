@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use rand::Rng;
 
 use bracket_lib::prelude::*;
 
@@ -93,12 +93,7 @@ impl GameCell {
     /// Given any positive number, move the cell in one of the 4 cardinal directions
     pub fn bump(&mut self) {
         if self.tic >= 0.1 {
-            let (a, b) = match SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("time oops")
-                .as_micros()
-                % 8
-            {
+            let (a, b) = match rand::thread_rng().gen_range(0, 7) {
                 0 => (0.0, -1.0),
                 1 => (1.0, -1.0),
                 2 => (1.0, 0.0),

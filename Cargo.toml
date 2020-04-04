@@ -7,9 +7,12 @@ keywords = ["text", "rts", "strategy", "game", "text-based"]
 categories = ["games"]
 
 [features]
-default = [ "bracket-lib/opengl" ]
-console = [ "bracket-lib/crossterm" ]
+default = ["bracket-lib/opengl", "legion/default"]
+web = ["bracket-lib/opengl"]
+console = ["bracket-lib/crossterm"]
 
 [dependencies]
-legion = "0.2"
-bracket-lib = { git = "https://github.com/thebracket/bracket-lib", optional = true, default-features = false, features = [ "threaded" ] }
+legion = { version = "0.2", default-features = false }
+bracket-lib = { git = "https://github.com/thebracket/bracket-lib", optional = true, default-features = false, features = ["threaded"] }
+rand = { version = "0.7", features = ["wasm-bindgen"] }
+wasm-bindgen = { version = "0.2", optional = true }
