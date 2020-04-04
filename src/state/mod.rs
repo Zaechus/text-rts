@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use bracket_lib::prelude::*;
 
@@ -6,25 +6,18 @@ use legion::prelude::*;
 
 use crate::{
     components::{GameCell, Unit},
-    types::Race,
+    types::{Mode, Race},
 };
 
 const BROWN: (u8, u8, u8) = (170, 30, 0);
 const GREEN: (u8, u8, u8) = (0, 170, 0);
+const DARK_GREEN: (u8, u8, u8) = (0, 120, 0);
 
 #[derive(Clone, Debug)]
 pub enum CurrentState {
     Menu,
     Playing,
     Quitting,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum Mode {
-    Select,
-    Move,
-    Attack,
-    Build,
 }
 
 add_wasm_support!();
@@ -35,6 +28,7 @@ pub struct State {
     schedule: Schedule,
     window_size: (u32, u32),
     tic: u8,
+    dt: (Instant, f32),
     offset: (i32, i32),
     mouse: Point,
     mouse_click: Option<(usize, bool)>,
@@ -53,11 +47,13 @@ impl State {
         for x in 0..20 {
             units.push((
                 GameCell::new(10 - (x & 1), x + 5, 'V', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(2),
+                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(14.5),
             ));
             units.push((
-                GameCell::new(7 - (x & 1), x + 5, 'Y', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 40).with_damage(5).with_range(10),
+                GameCell::new(7 - (x & 1), x + 5, 'Y', RGB::named(DARK_GREEN)),
+                Unit::new(Race::Bionic, 40)
+                    .with_damage(5)
+                    .with_range(10, 13),
             ));
         }
         for _ in 0..5 {
@@ -71,22 +67,22 @@ impl State {
         world.insert((), units.into_iter());
 
         let bump_units = SystemBuilder::new("bump_units")
-            .with_query(<(Read<GameCell>, Read<Unit>)>::query())
             .with_query(<(Read<GameCell>,)>::query().filter(component::<Unit>()))
+            .with_query(<(Read<GameCell>,)>::query())
             .write_component::<GameCell>()
             .build(|_, world, _, (query, inner_query)| {
-                let bumped = Arc::new(Mutex::new(Vec::new()));
-                for (e, (cell, unit)) in query.iter_entities_immutable(world) {
+                let mut bumped = Vec::new();
+                for (e, (cell,)) in query.iter_entities_immutable(world) {
                     for (e2, (cell2,)) in inner_query.iter_entities_immutable(world) {
                         if e != e2 && cell.point() == cell2.point() {
-                            bumped.lock().unwrap().push((e, unit.speed()));
+                            bumped.push(e);
                             break;
                         }
                     }
                 }
-                for (e, speed) in bumped.lock().unwrap().iter() {
+                for e in bumped.iter() {
                     if let Some(cell) = world.get_component_mut::<GameCell>(*e).as_deref_mut() {
-                        cell.bump(*speed);
+                        cell.bump();
                     }
                 }
             });
@@ -98,8 +94,8 @@ impl State {
             .write_component::<GameCell>()
             .write_component::<Unit>()
             .build(|_, world, _, (query, attack_query, moving_query)| {
-                let attacked_units = Arc::new(Mutex::new(Vec::new()));
-                let moving_units = Arc::new(Mutex::new(Vec::new()));
+                let mut attacked_units = Vec::new();
+                let mut moving_units = Vec::new();
                 for (e, (cell, unit)) in query.iter_entities_immutable(world) {
                     let mut attacked = false;
                     for (e2, (cell2, unit2)) in attack_query.iter_entities_immutable(world) {
@@ -108,7 +104,7 @@ impl State {
                             && cell.range_rect(unit.range()).point_in_rect(cell2.point())
                         {
                             if let Some(damage) = unit.attack() {
-                                attacked_units.lock().unwrap().push((e2, damage));
+                                attacked_units.push((e, e2, damage));
                             }
                             attacked = true;
                             break;
@@ -119,24 +115,32 @@ impl State {
                             if e != e2
                                 && unit.race() != unit2.race()
                                 && cell
-                                    .range_rect((unit.range() as f32 * 0.5 + 6.0).floor() as u32)
+                                    .range_rect(unit.follow_dist())
                                     .point_in_rect(cell2.point())
                             {
-                                moving_units.lock().unwrap().push((e, cell2.point()));
+                                moving_units.push((e, cell2.point()));
                                 break;
                             }
                         }
                     }
                 }
-                for (e, dmg) in attacked_units.lock().unwrap().iter() {
+                for (e, e2, dmg) in attacked_units.iter() {
                     if let Some(cell) = world.get_component_mut::<GameCell>(*e).as_deref_mut() {
-                        cell.set_harmed();
+                        if cell.mode() == Mode::Attack {
+                            cell.stop_moving();
+                        }
                     }
                     if let Some(unit) = world.get_component_mut::<Unit>(*e).as_deref_mut() {
+                        unit.reset_tic();
+                    }
+                    if let Some(cell) = world.get_component_mut::<GameCell>(*e2).as_deref_mut() {
+                        cell.set_harmed();
+                    }
+                    if let Some(unit) = world.get_component_mut::<Unit>(*e2).as_deref_mut() {
                         unit.harm(*dmg);
                     }
                 }
-                for (e, pt) in moving_units.lock().unwrap().iter() {
+                for (e, pt) in moving_units.iter() {
                     if let Some(cell) = world.get_component_mut::<GameCell>(*e).as_deref_mut() {
                         cell.move_towards(*pt);
                     }
@@ -147,13 +151,13 @@ impl State {
             .with_query(<(Read<Unit>,)>::query().filter(changed::<Unit>()))
             .write_component::<Unit>()
             .build(|commands, world, _, query| {
-                let deleted = Arc::new(Mutex::new(Vec::new()));
+                let mut deleted = Vec::new();
                 for (e, (unit,)) in query.iter_entities_immutable(world) {
                     if unit.hp() <= 0 {
-                        deleted.lock().unwrap().push(e);
+                        deleted.push(e);
                     }
                 }
-                for e in deleted.lock().unwrap().iter() {
+                for e in deleted.iter() {
                     commands.delete(*e);
                 }
             });
@@ -170,6 +174,7 @@ impl State {
             world,
             schedule,
             window_size: (w, h),
+            dt: (Instant::now(), 1.0),
             tic: 0,
             offset: (0, 0),
             mouse: Point::new(0, 0),
@@ -217,19 +222,26 @@ impl State {
         self.draw_highlight_box(ctx);
     }
 
+    fn mode(&self) -> Mode {
+        self.mode
+    }
+    fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode;
+    }
+
     fn mouse_input(&mut self) {
         match self.mouse_click {
-            Some((0, false)) => match self.mode {
+            Some((0, false)) => match self.mode() {
                 Mode::Select => self.select_cells(),
                 Mode::Move | Mode::Attack => {
-                    self.move_cells();
-                    self.mode = Mode::Select;
+                    self.move_cells(self.mode());
+                    self.set_mode(Mode::Select);
                 }
                 Mode::Build => (),
             },
             Some((1, false)) => {
-                self.move_cells();
-                self.mode = Mode::Select;
+                self.move_cells(Mode::Move);
+                self.set_mode(Mode::Select);
             }
             Some((0, true)) => {
                 self.selection.x1 = self.mouse.x;
@@ -242,10 +254,10 @@ impl State {
     fn key_input(&mut self, ctx: &mut BTerm) {
         if let Some(key) = ctx.key {
             match key {
-                VirtualKeyCode::M => self.mode = Mode::Move,
-                VirtualKeyCode::A => self.mode = Mode::Attack,
-                VirtualKeyCode::B => self.mode = Mode::Build,
-                VirtualKeyCode::Escape => self.mode = Mode::Select,
+                VirtualKeyCode::M => self.set_mode(Mode::Move),
+                VirtualKeyCode::A => self.set_mode(Mode::Attack),
+                VirtualKeyCode::B => self.set_mode(Mode::Build),
+                VirtualKeyCode::Escape => self.set_mode(Mode::Select),
                 VirtualKeyCode::Up => self.offset.1 += 1,
                 VirtualKeyCode::Down => self.offset.1 -= 1,
                 VirtualKeyCode::Left => self.offset.0 += 1,
@@ -299,7 +311,7 @@ impl State {
         let mut w = 0;
         let mut color = RGB::new();
         let mut s = "";
-        match self.mode {
+        match self.mode() {
             Mode::Move => {
                 w = 5;
                 color = RGB::from_u8(0, 175, 0);
@@ -348,8 +360,8 @@ impl State {
                 );
             }
 
-            cell.update(unit.speed());
-            unit.tic();
+            cell.update(self.dt.1, unit.speed());
+            unit.tic(self.dt.1);
         }
     }
 
@@ -395,15 +407,15 @@ impl State {
         }
     }
 
-    fn move_cells(&mut self) {
+    fn move_cells(&mut self, mode: Mode) {
         let query = <(Write<GameCell>, Write<Unit>)>::query();
 
         for (mut cell, _) in query.iter(&mut self.world) {
             if cell.selected() {
-                cell.move_pos(Point::new(
-                    self.mouse.x - self.offset.0,
-                    self.mouse.y - self.offset.1,
-                ));
+                cell.move_pos(
+                    Point::new(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1),
+                    mode,
+                );
             }
         }
     }
@@ -421,6 +433,11 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
+        self.dt = (
+            Instant::now(),
+            Instant::now().duration_since(self.dt.0).as_secs_f32(),
+        );
+
         ctx.cls();
 
         let mut input = INPUT.lock();
