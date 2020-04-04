@@ -256,6 +256,7 @@ impl State {
                 VirtualKeyCode::M => self.set_mode(Mode::Move),
                 VirtualKeyCode::A => self.set_mode(Mode::Attack),
                 VirtualKeyCode::B => self.set_mode(Mode::Build),
+                VirtualKeyCode::S => self.stop_cells(),
                 VirtualKeyCode::Escape => self.set_mode(Mode::Select),
                 VirtualKeyCode::Up => self.offset.1 += 1,
                 VirtualKeyCode::Down => self.offset.1 -= 1,
@@ -418,6 +419,16 @@ impl State {
                     Point::new(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1),
                     mode,
                 );
+            }
+        }
+    }
+
+    fn stop_cells(&mut self) {
+        let query = <(Write<GameCell>, Write<Unit>)>::query();
+
+        for (mut cell, _) in query.iter(&mut self.world) {
+            if cell.selected() {
+                cell.stop_moving();
             }
         }
     }
