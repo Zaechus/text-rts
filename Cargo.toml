@@ -9,7 +9,7 @@ categories = ["games"]
 [features]
 default = ["bracket-lib/opengl", "legion/default"]
 web = ["bracket-lib/opengl"]
-console = ["bracket-lib/crossterm"]
+console = ["bracket-lib/crossterm", "legion/default"]
 
 [dependencies]
 legion = { version = "0.2", default-features = false }

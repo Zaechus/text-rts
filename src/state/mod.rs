@@ -233,6 +233,17 @@ impl State {
     }
 
     fn mouse_input(&mut self) {
+        if self.mouse.x <= 0 {
+            self.offset.0 += 1;
+        } else if self.mouse.x >= self.window_size.0 as i32 - 1 {
+            self.offset.0 -= 1;
+        }
+        if self.mouse.y <= 0 {
+            self.offset.1 += 1;
+        } else if self.mouse.y >= self.window_size.1 as i32 - 1 {
+            self.offset.1 -= 1;
+        }
+
         match self.mouse_click {
             Some((0, false)) => match self.mode() {
                 Mode::Select => self.select_cells(),
