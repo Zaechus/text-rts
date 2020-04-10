@@ -51,12 +51,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d663a8e9a99154b5fb793032533f6328da35e23aac63d5c152279aa8ba356825"
 
 [[package]]
-name = "arrayvec"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
-
-[[package]]
 name = "autocfg"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -91,35 +85,38 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "bracket-algorithm-traits"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "639b03f7af008d58bf610f9d05a7574009df2708a1d111fe0cf196d069c043b6"
 dependencies = [
  "bracket-geometry",
- "smallvec 1.2.0",
+ "smallvec 1.3.0",
 ]
 
 [[package]]
 name = "bracket-color"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d944e290d46dc178db302a750f0273611a036991f632d08d4b3450c44f7dc16"
 dependencies = [
  "byteorder",
  "lazy_static",
- "parking_lot 0.10.0",
+ "parking_lot 0.10.1",
 ]
 
 [[package]]
 name = "bracket-geometry"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a67ec1fe5239190dfdca60648a4899278bc5e33c2d612c30bc917bdbe2dd1a3"
 dependencies = [
  "ultraviolet",
 ]
 
 [[package]]
 name = "bracket-lib"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "git+https://github.com/thebracket/bracket-lib#da9a923cf2eb246c22b17f13556c54d692466c91"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-color",
@@ -132,27 +129,30 @@ dependencies = [
 
 [[package]]
 name = "bracket-noise"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b4f210a8c63dd811f0a2eda8b05a0ed6f605aa28a436e4d40db08ba6c9514fc"
 dependencies = [
  "bracket-random",
 ]
 
 [[package]]
 name = "bracket-pathfinding"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2757e88edd312abd0996157597f0d159ff873fcfe894e41ab58b82ef3ae26b6a"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-geometry",
  "rayon",
- "smallvec 1.2.0",
+ "smallvec 1.3.0",
 ]
 
 [[package]]
 name = "bracket-random"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac06539968b64bd20c9f7e1620e3a090737ecc54b850f9527a27f961284c8b97"
 dependencies = [
  "lazy_static",
  "rand",
@@ -162,8 +162,9 @@ dependencies = [
 
 [[package]]
 name = "bracket-terminal"
-version = "0.7.0"
-source = "git+https://github.com/thebracket/bracket-lib#3970f052f64fbe1f780c0c335ab1c84a4f177d0b"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59c77ac4b37f29babbf68df8dfba35bab342f34c1db510efaa24d44cf5273c1a"
 dependencies = [
  "bracket-color",
  "bracket-geometry",
@@ -176,7 +177,7 @@ dependencies = [
  "image",
  "lazy_static",
  "object-pool",
- "parking_lot 0.10.0",
+ "parking_lot 0.10.1",
  "rand",
  "ultraviolet",
  "wasm-bindgen",
@@ -392,16 +393,16 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.16.0"
+version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8a3223215bc00c666d6be730e88aef245ad4a4f837e87a16c347e8acf701643"
+checksum = "ccdd8ef63a44e821956c6a276eca0faaa889d6a067dfcdbd5bfe85dce3a1d250"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
  "lazy_static",
  "libc",
  "mio",
- "parking_lot 0.10.0",
+ "parking_lot 0.10.1",
  "signal-hook",
  "winapi 0.3.8",
 ]
@@ -417,9 +418,9 @@ dependencies = [
 
 [[package]]
 name = "deflate"
-version = "0.7.20"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707b6a7b384888a70c8d2e8650b3e60170dfc6a67bb4aa67b6dfca57af4bedb4"
+checksum = "e7e5d2a2273fed52a7f947ee55b092c4057025d7a3e04e5ecdbd25d6c3fb1bd7"
 dependencies = [
  "adler32",
  "byteorder",
@@ -550,9 +551,9 @@ dependencies = [
 
 [[package]]
 name = "glutin"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf22d4e90c55d9be9f2ad52410e7a2c0d7e9c99d93a13df73a672e7ef4e8c7f7"
+checksum = "611023dea5047f3e9047aecb9e361852dcfd0881129daf5d110106ca2b14f3f3"
 dependencies = [
  "android_glue",
  "cgl",
@@ -569,7 +570,7 @@ dependencies = [
  "log",
  "objc",
  "osmesa-sys",
- "parking_lot 0.10.0",
+ "parking_lot 0.10.1",
  "wayland-client",
  "winapi 0.3.8",
  "winit",
@@ -631,10 +632,11 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.22.5"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08ed2ada878397b045454ac7cfb011d73132c59f31a955d230bd1f1c2e68eb4a"
+checksum = "bfc5483f8d5afd3653b38a196c52294dcb239c3e1a5bade1990353ea13bcf387"
 dependencies = [
+ "bytemuck",
  "byteorder",
  "jpeg-decoder",
  "num-iter",
@@ -771,9 +773,9 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79b2de95ecb4691949fea4716ca53cdbcfccb2c612e19644a8bad05edcf9f47b"
+checksum = "c4da24a77a3d8a6d4862d95f72e6fdb9c09a643ecdb402d754004a557f2bec75"
 dependencies = [
  "scopeguard",
 ]
@@ -1005,12 +1007,12 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92e98c49ab0b7ce5b222f2cc9193fc4efe11c6d0bd4f648e374684a6857b1cfc"
+checksum = "6fdfcb5f20930a79e326f7ec992a9fdb5b7bd809254b1e735bdd5a99f78bee0d"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.7.0",
+ "parking_lot_core 0.7.1",
 ]
 
 [[package]]
@@ -1030,15 +1032,15 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7582838484df45743c8434fbff785e8edf260c28748353d44bc0da32e0ceabf1"
+checksum = "0e136c1904604defe99ce5fd71a28d473fa60a12255d511aa78a9ddf11237aeb"
 dependencies = [
  "cfg-if",
  "cloudabi",
  "libc",
  "redox_syscall",
- "smallvec 1.2.0",
+ "smallvec 1.3.0",
  "winapi 0.3.8",
 ]
 
@@ -1078,9 +1080,9 @@ checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 
 [[package]]
 name = "png"
-version = "0.15.3"
+version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef859a23054bbfee7811284275ae522f0434a3c8e7f4b74bd4a35ae7e1c4a283"
+checksum = "910f09135b1ed14bb16be445a8c23ddf0777eca485fbfc7cee00d81fecab158a"
 dependencies = [
  "bitflags",
  "crc32fast",
@@ -1258,17 +1260,16 @@ version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "310942406a39981bed7e12b09182a221a29e0990f3e7e0c971f131922ed135d5"
 dependencies = [
- "rusttype 0.8.2",
+ "rusttype 0.8.3",
 ]
 
 [[package]]
 name = "rusttype"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14a911032fb5791ccbeec9f28fdcb9bf0983b81f227bafdfd227c658d0731c8a"
+checksum = "9f61411055101f7b60ecf1041d87fb74205fb20b0c7a723f07ef39174cf6b4c0"
 dependencies = [
  "approx",
- "arrayvec",
  "ordered-float",
  "stb_truetype",
 ]
@@ -1382,9 +1383,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c2fb2ec9bcd216a5b0d0ccf31ab17b5ed1d627960edff65bbe95d3ce221cefc"
+checksum = "05720e22615919e4734f6a99ceae50d00226c3c5aca406e102ebc33298214e0a"
 
 [[package]]
 name = "smithay-client-toolkit"
@@ -1740,9 +1741,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "winit"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65a5c1a5ef76ac31cc97ad29489acdbed2178f3fc12ca00ee6cb11d60adb5a3a"
+checksum = "02e9092b71b48ad6a0d98835a786308d10760cc09369d02e4a166608327f1f26"
 dependencies = [
  "android_glue",
  "bitflags",
@@ -1758,7 +1759,7 @@ dependencies = [
  "mio",
  "mio-extras",
  "objc",
- "parking_lot 0.10.0",
+ "parking_lot 0.10.1",
  "percent-encoding",
  "raw-window-handle",
  "smithay-client-toolkit",
@@ -1799,6 +1800,6 @@ checksum = "d089681aa106a86fade1b0128fb5daf07d5867a509ab036d99988dec80429a57"
 
 [[package]]
 name = "xml-rs"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9afd061c1c7c8ef0a3d337fbf76fc8c098bd0dfefd4adaafef25a559352f2031"
+checksum = "2bb76e5c421bbbeb8924c60c030331b345555024d56261dae8f3e786ed817c23"

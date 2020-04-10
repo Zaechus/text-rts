@@ -10,6 +10,8 @@ use crate::{
     types::{Mode, Race},
 };
 
+const WHITE: (u8, u8, u8) = (255, 255, 255);
+const DARK_GRAY: (u8, u8, u8) = (100, 100, 100);
 const BROWN: (u8, u8, u8) = (170, 30, 0);
 const GREEN: (u8, u8, u8) = (0, 170, 0);
 const DARK_GREEN: (u8, u8, u8) = (0, 120, 0);
@@ -310,13 +312,7 @@ impl State {
     fn print_grid(&mut self, ctx: &mut BTerm) {
         for x in 0..self.window_size.0 {
             for y in 0..self.window_size.1 - 1 {
-                ctx.print_color(
-                    x as i32,
-                    y as i32,
-                    RGB::from_u8(100, 100, 100),
-                    RGB::new(),
-                    ".",
-                )
+                ctx.print_color(x as i32, y as i32, RGB::named(DARK_GRAY), RGB::new(), ".")
             }
         }
     }
@@ -344,7 +340,7 @@ impl State {
             _ => (),
         }
         ctx.draw_box(0, 0, w, 2, color, color);
-        ctx.print_color(1, 1, RGB::from_u8(255, 255, 255), color, s)
+        ctx.print_color(1, 1, RGB::named(WHITE), color, s)
     }
 
     fn render_cells(&mut self, ctx: &mut BTerm) {
@@ -469,7 +465,6 @@ impl State {
         let mut input = INPUT.lock();
 
         input.for_each_message(|event| match event {
-            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
             BEvent::MouseButtonUp { button } => {
                 self.mouse_pressed = (button, false, self.mouse_pressed.1)
             }
