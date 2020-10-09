@@ -90,7 +90,7 @@ impl GameCell {
         }
     }
 
-    /// Given any positive number, move the cell in one of the 4 cardinal directions
+    /// Randomly move the cell in one of 8 directions
     pub fn bump(&mut self) {
         if self.tic >= 0.1 {
             let (a, b) = match rand::thread_rng().gen_range(0, 7) {

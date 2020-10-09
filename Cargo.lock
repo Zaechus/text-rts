@@ -98,7 +98,7 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 [[package]]
 name = "bracket-algorithm-traits"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "bracket-geometry",
  "smallvec",
@@ -107,7 +107,7 @@ dependencies = [
 [[package]]
 name = "bracket-color"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "byteorder",
  "lazy_static",
@@ -117,7 +117,7 @@ dependencies = [
 [[package]]
 name = "bracket-geometry"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "ultraviolet",
 ]
@@ -125,7 +125,7 @@ dependencies = [
 [[package]]
 name = "bracket-lib"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-color",
@@ -139,7 +139,7 @@ dependencies = [
 [[package]]
 name = "bracket-noise"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "bracket-random",
 ]
@@ -147,7 +147,7 @@ dependencies = [
 [[package]]
 name = "bracket-pathfinding"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-geometry",
@@ -158,7 +158,7 @@ dependencies = [
 [[package]]
 name = "bracket-random"
 version = "0.8.0"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "lazy_static",
  "rand",
@@ -169,7 +169,7 @@ dependencies = [
 [[package]]
 name = "bracket-terminal"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#320e8f9d97f701af87d4648f4792e3f8b4d88e72"
+source = "git+https://github.com/Maxgy/bracket-lib#af9503b9d5f7c761b21db19280009bb9a948745e"
 dependencies = [
  "bracket-color",
  "bracket-geometry",
@@ -222,9 +222,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.60"
+version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef611cc68ff783f18535d77ddd080185275713d852c4f5cbb6122c462a7a825c"
+checksum = "ed67cbde08356238e75fc4656be4749481eeffb09e19f320a25237d5221c985d"
 
 [[package]]
 name = "cfg-if"
@@ -1519,9 +1519,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c51d92969d209b54a98397e1b91c8ae82d8c87a7bb87df0b29aa2ad81454228"
+checksum = "1e2e59c50ed8f6b050b071aa7b6865293957a9af6b58b94f97c1c9434ad440ea"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
