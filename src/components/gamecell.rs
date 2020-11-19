@@ -33,6 +33,7 @@ impl GameCell {
     }
 
     pub fn move_pos(&mut self, point: Point) {
+        self.mode = Mode::Move;
         self.destination = Some(point);
     }
     pub fn move_towards(&mut self, other: Point) {
