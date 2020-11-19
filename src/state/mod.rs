@@ -7,7 +7,7 @@ use legion::*;
 
 use crate::{
     components::{GameCell, Unit},
-    types::{Mode, Race},
+    types::{CtrlGroups, Mode, Race, UnitKind},
 };
 
 const WHITE: (u8, u8, u8) = (255, 255, 255);
@@ -39,6 +39,8 @@ pub struct State {
     mode: Mode,
     cursor: String,
     selection: Rect,
+    selected: Vec<Entity>,
+    ctrl_groups: CtrlGroups,
 }
 
 impl State {
@@ -49,11 +51,13 @@ impl State {
         for x in 0..20 {
             units.push((
                 GameCell::new(10 - (x & 1), x + 5, 'V', RGB::named(GREEN)),
-                Unit::new(Race::Bionic, 30).with_damage(5).with_speed(14.5),
+                Unit::new(Race::Bionic, UnitKind::Blademaster, 30)
+                    .with_damage(5)
+                    .with_speed(14.5),
             ));
             units.push((
                 GameCell::new(7 - (x & 1), x + 5, 'Y', RGB::named(DARK_GREEN)),
-                Unit::new(Race::Bionic, 40)
+                Unit::new(Race::Bionic, UnitKind::Strider, 40)
                     .with_damage(5)
                     .with_range(10, 13),
             ));
@@ -62,7 +66,7 @@ impl State {
             for y in 0..20 {
                 units.push((
                     GameCell::new(45, 5 + y, '*', RGB::named(BROWN)),
-                    Unit::new(Race::Bug, 15),
+                    Unit::new(Race::Bug, UnitKind::FleshSpider, 15),
                 ));
             }
         }
@@ -78,7 +82,7 @@ impl State {
                     for (e, (cell,)) in chunk.into_iter_entities() {
                         for inner_chunk in inner_query.iter_chunks(world) {
                             for (e2, (cell2,)) in inner_chunk.into_iter_entities() {
-                                if e != e2 && cell.point() == cell2.point() {
+                                if !cell.is_holding() && e != e2 && cell.point() == cell2.point() {
                                     bumped.push(e);
                                     break;
                                 }
@@ -123,6 +127,7 @@ impl State {
                             for moving_chunk in moving_query.iter_chunks(world) {
                                 for (e2, (cell2, unit2)) in moving_chunk.into_iter_entities() {
                                     if e != e2
+                                        && !cell.is_holding()
                                         && unit.race() != unit2.race()
                                         && cell
                                             .range_rect(unit.follow_dist())
@@ -138,22 +143,20 @@ impl State {
                 }
                 for (e, e2, dmg) in attacked_units.iter() {
                     if let Ok(cell) = world.entry_mut(*e).unwrap().get_component_mut::<GameCell>() {
-                        if cell.mode() == Mode::Attack {
-                            cell.stop_moving();
-                        }
+                        cell.stop_moving();
                     }
                     if let Ok(unit) = world.entry_mut(*e).unwrap().get_component_mut::<Unit>() {
                         unit.reset_tic();
                     }
-                    if let Ok(cell) = world
+                    if let Ok(cell2) = world
                         .entry_mut(*e2)
                         .unwrap()
                         .get_component_mut::<GameCell>()
                     {
-                        cell.set_harmed();
+                        cell2.set_harmed();
                     }
-                    if let Ok(unit) = world.entry_mut(*e2).unwrap().get_component_mut::<Unit>() {
-                        unit.harm(*dmg);
+                    if let Ok(unit2) = world.entry_mut(*e2).unwrap().get_component_mut::<Unit>() {
+                        unit2.harm(*dmg);
                     }
                 }
                 for (e, pt) in moving_units.iter() {
@@ -203,6 +206,8 @@ impl State {
             mode: Mode::Select,
             cursor: String::from("<"),
             selection: Rect::default(),
+            selected: Vec::new(),
+            ctrl_groups: CtrlGroups::new(),
         }
     }
 
@@ -266,62 +271,108 @@ impl State {
             Some((0, false)) => match self.mode() {
                 Mode::Select => self.select_cells(),
                 Mode::Move | Mode::Attack => {
-                    self.move_cells(self.mode());
+                    self.move_cells();
                     self.set_mode(Mode::Select);
                 }
-                Mode::Build => (),
+                Mode::Ctrl => self.select_same(),
+                _ => (),
             },
             Some((1, false)) => {
-                self.move_cells(Mode::Move);
+                self.move_cells();
                 self.set_mode(Mode::Select);
             }
             _ => (),
         }
     }
 
+    fn key_num(key: VirtualKeyCode) -> Option<usize> {
+        match key {
+            VirtualKeyCode::Key0 => Some(0),
+            VirtualKeyCode::Key1 => Some(1),
+            VirtualKeyCode::Key2 => Some(2),
+            VirtualKeyCode::Key3 => Some(3),
+            VirtualKeyCode::Key4 => Some(4),
+            VirtualKeyCode::Key5 => Some(5),
+            VirtualKeyCode::Key6 => Some(6),
+            VirtualKeyCode::Key7 => Some(7),
+            VirtualKeyCode::Key8 => Some(8),
+            VirtualKeyCode::Key9 => Some(9),
+            _ => None,
+        }
+    }
+
     fn key_input(&mut self, ctx: &mut BTerm) {
         if let Some(key) = ctx.key {
-            match key {
-                VirtualKeyCode::M => self.set_mode(Mode::Move),
-                VirtualKeyCode::A => self.set_mode(Mode::Attack),
-                VirtualKeyCode::B => self.set_mode(Mode::Build),
-                VirtualKeyCode::S => self.stop_cells(),
-                VirtualKeyCode::Escape => self.set_mode(Mode::Select),
-                VirtualKeyCode::Up => self.offset.1 += 1,
-                VirtualKeyCode::Down => self.offset.1 -= 1,
-                VirtualKeyCode::Left => self.offset.0 += 1,
-                VirtualKeyCode::Right => self.offset.0 -= 1,
-                VirtualKeyCode::End => self.curr_state = CurrentState::Quitting,
-                _ => (),
+            if let Mode::Ctrl = self.mode {
+                if let Some(n) = State::key_num(key) {
+                    self.ctrl_groups.bind(n, self.selected.clone());
+                }
+                self.set_mode(Mode::Select);
+            } else if let Mode::Add = self.mode {
+                if let Some(n) = State::key_num(key) {
+                    self.ctrl_groups.add(n, &mut self.selected.clone());
+                }
+                self.set_mode(Mode::Select);
+            } else {
+                match key {
+                    VirtualKeyCode::M => self.set_mode(Mode::Move),
+                    VirtualKeyCode::A => self.set_mode(Mode::Attack),
+                    VirtualKeyCode::B => self.set_mode(Mode::Build),
+                    VirtualKeyCode::S => self.stop_cells(),
+                    VirtualKeyCode::H => self.hold_cells(),
+                    VirtualKeyCode::F => self.focus_cell(),
+
+                    VirtualKeyCode::LControl | VirtualKeyCode::RControl => {
+                        self.set_mode(Mode::Ctrl)
+                    }
+                    VirtualKeyCode::LShift | VirtualKeyCode::RShift => self.set_mode(Mode::Add),
+
+                    VirtualKeyCode::Escape => self.set_mode(Mode::Select),
+                    VirtualKeyCode::Up => self.offset.1 += 1,
+                    VirtualKeyCode::Down => self.offset.1 -= 1,
+                    VirtualKeyCode::Left => self.offset.0 += 1,
+                    VirtualKeyCode::Right => self.offset.0 -= 1,
+                    VirtualKeyCode::End => self.curr_state = CurrentState::Quitting,
+                    _ => {
+                        if let Some(n) = State::key_num(key) {
+                            if let Some(group) = self.ctrl_groups.group(n) {
+                                self.selected = group.clone();
+                                self.load_ctrl_group();
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     fn draw_highlight_box(&mut self, ctx: &mut BTerm) {
-        self.selection.x2 = self.mouse.x;
-        self.selection.y2 = self.mouse.y;
-        if self.mouse_pressed.0 == 0 && self.mouse_pressed.1 {
-            let x = if self.selection.x1 <= self.selection.x2 {
-                self.selection.x1
+        if let Mode::Select = self.mode {
+            self.selection.x2 = self.mouse.x;
+            self.selection.y2 = self.mouse.y;
+            if self.mouse_pressed.0 == 0 && self.mouse_pressed.1 {
+                let x = if self.selection.x1 <= self.selection.x2 {
+                    self.selection.x1
+                } else {
+                    self.selection.x2
+                };
+                let y = if self.selection.y1 <= self.selection.y2 {
+                    self.selection.y1
+                } else {
+                    self.selection.y2
+                };
+                ctx.draw_hollow_box(
+                    x,
+                    y,
+                    self.selection.width(),
+                    self.selection.height(),
+                    RGB::named(GREEN),
+                    RGB::new(),
+                );
             } else {
-                self.selection.x2
-            };
-            let y = if self.selection.y1 <= self.selection.y2 {
-                self.selection.y1
-            } else {
-                self.selection.y2
-            };
-            ctx.draw_hollow_box(
-                x,
-                y,
-                self.selection.width(),
-                self.selection.height(),
-                RGB::named(GREEN),
-                RGB::new(),
-            );
-        } else {
-            self.selection.x1 = self.mouse.x;
-            self.selection.y1 = self.mouse.y;
+                self.selection.x1 = self.mouse.x;
+                self.selection.y1 = self.mouse.y;
+            }
         }
     }
 
@@ -352,6 +403,16 @@ impl State {
                 w = 6;
                 color = RGB::from_u8(0, 0, 175);
                 s = "Build";
+            }
+            Mode::Ctrl => {
+                w = 5;
+                color = RGB::from_u8(75, 75, 75);
+                s = "Ctrl"
+            }
+            Mode::Add => {
+                w = 4;
+                color = RGB::from_u8(75, 75, 75);
+                s = "Add"
             }
             _ => (),
         }
@@ -391,40 +452,12 @@ impl State {
         }
     }
 
-    fn select_cells(&mut self) {
+    fn load_ctrl_group(&mut self) {
         let mut query = <(Write<GameCell>,)>::query();
 
-        for (cell,) in query.iter_mut(&mut self.world) {
-            if self.selection.width() == 0 || self.selection.height() == 0 {
-                if self.mouse.x == cell.x() + self.offset.0
-                    && self.mouse.y == cell.y() + self.offset.1
-                {
-                    cell.select();
-                    break;
-                } else {
-                    cell.deselect();
-                }
-            } else {
-                let x = if self.selection.x1 <= self.selection.x2 {
-                    self.selection.x1
-                } else {
-                    self.selection.x2
-                };
-                let y = if self.selection.y1 <= self.selection.y2 {
-                    self.selection.y1
-                } else {
-                    self.selection.y2
-                };
-                if Rect::with_size(
-                    x,
-                    y,
-                    self.selection.width() + 1,
-                    self.selection.height() + 1,
-                )
-                .point_in_rect(Point::new(
-                    cell.x() + self.offset.0,
-                    cell.y() + self.offset.1,
-                )) {
+        for chunk in query.iter_chunks_mut(&mut self.world) {
+            for (e, (cell,)) in chunk.into_iter_entities() {
+                if self.selected.contains(&e) {
                     cell.select();
                 } else {
                     cell.deselect();
@@ -433,15 +466,106 @@ impl State {
         }
     }
 
-    fn move_cells(&mut self, mode: Mode) {
+    fn select_cells(&mut self) {
+        let mut query = <(Write<GameCell>,)>::query();
+
+        self.selected = Vec::new();
+
+        if self.selection.width() == 0 || self.selection.height() == 0 {
+            for chunk in query.iter_chunks_mut(&mut self.world) {
+                for (e, (cell,)) in chunk.into_iter_entities() {
+                    if self.mouse.x == cell.x() + self.offset.0
+                        && self.mouse.y == cell.y() + self.offset.1
+                    {
+                        cell.select();
+                        self.selected.push(e);
+                        break;
+                    } else {
+                        cell.deselect();
+                    }
+                }
+            }
+        } else {
+            for chunk in query.iter_chunks_mut(&mut self.world) {
+                for (e, (cell,)) in chunk.into_iter_entities() {
+                    let x = if self.selection.x1 <= self.selection.x2 {
+                        self.selection.x1
+                    } else {
+                        self.selection.x2
+                    };
+                    let y = if self.selection.y1 <= self.selection.y2 {
+                        self.selection.y1
+                    } else {
+                        self.selection.y2
+                    };
+                    if Rect::with_size(
+                        x,
+                        y,
+                        self.selection.width() + 1,
+                        self.selection.height() + 1,
+                    )
+                    .point_in_rect(Point::new(
+                        cell.x() + self.offset.0,
+                        cell.y() + self.offset.1,
+                    )) {
+                        cell.select();
+                        self.selected.push(e);
+                    } else {
+                        cell.deselect();
+                    }
+                }
+            }
+        }
+    }
+
+    fn select_same(&mut self) {
+        let mut query = <(Write<GameCell>, Read<Unit>)>::query();
+
+        self.selected = Vec::new();
+
+        let mut kind = None;
+
+        if self.selection.width() == 0 || self.selection.height() == 0 {
+            for (cell, unit) in query.iter_mut(&mut self.world) {
+                if self.mouse.x == cell.x() + self.offset.0
+                    && self.mouse.y == cell.y() + self.offset.1
+                {
+                    kind = Some(unit.kind());
+                    break;
+                }
+            }
+        }
+        if let Some(kind) = kind {
+            for chunk in query.iter_chunks_mut(&mut self.world) {
+                for (e, (cell, unit)) in chunk.into_iter_entities() {
+                    if kind == unit.kind()
+                        && cell.x() + self.offset.0 > 0
+                        && cell.y() + self.offset.1 > 0
+                        && cell.x() + self.offset.0 < self.window_size.0 as i32
+                        && cell.y() + self.offset.1 < self.window_size.1 as i32
+                    {
+                        cell.select();
+                        self.selected.push(e);
+                    } else {
+                        cell.deselect();
+                    }
+                }
+            }
+        }
+
+        self.mode = Mode::Select;
+    }
+
+    fn move_cells(&mut self) {
         let mut query = <(Write<GameCell>, Write<Unit>)>::query();
 
-        for (cell, _) in query.iter_mut(&mut self.world) {
+        for (cell, unit) in query.iter_mut(&mut self.world) {
             if cell.selected() {
-                cell.move_pos(
-                    Point::new(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1),
-                    mode,
-                );
+                cell.move_pos(Point::new(
+                    self.mouse.x - self.offset.0,
+                    self.mouse.y - self.offset.1,
+                ));
+                unit.reset_tic();
             }
         }
     }
@@ -452,6 +576,30 @@ impl State {
         for (cell, _) in query.iter_mut(&mut self.world) {
             if cell.selected() {
                 cell.stop_moving();
+            }
+        }
+    }
+
+    fn hold_cells(&mut self) {
+        let mut query = <(Write<GameCell>, Write<Unit>)>::query();
+
+        for (cell, _) in query.iter_mut(&mut self.world) {
+            if cell.selected() {
+                cell.stop_moving();
+                cell.hold();
+            }
+        }
+    }
+
+    fn focus_cell(&mut self) {
+        let mut query = <(Write<GameCell>, Write<Unit>)>::query();
+
+        for (cell, _) in query.iter_mut(&mut self.world) {
+            if cell.selected() {
+                self.offset = (
+                    -cell.x() + self.window_size.0 as i32 / 2,
+                    -cell.y() + self.window_size.1 as i32 / 2,
+                );
             }
         }
     }

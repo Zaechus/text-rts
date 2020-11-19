@@ -1,9 +1,10 @@
-use crate::types::Race;
+use crate::types::{Race, UnitKind};
 
 #[derive(Clone, Debug)]
 
 pub struct Unit {
     race: Race,
+    kind: UnitKind,
     hp: (i32, u32),
     speed: f32,
     damage: u32,
@@ -14,9 +15,10 @@ pub struct Unit {
 }
 
 impl Unit {
-    pub fn new(race: Race, hp: i32) -> Self {
+    pub fn new(race: Race, kind: UnitKind, hp: i32) -> Self {
         Self {
             race,
+            kind,
             hp: (hp, hp as u32),
             speed: 13.5,
             damage: 1,
@@ -58,6 +60,9 @@ impl Unit {
 
     pub fn race(&self) -> Race {
         self.race
+    }
+    pub fn kind(&self) -> UnitKind {
+        self.kind
     }
     pub fn hp(&self) -> i32 {
         self.hp.0

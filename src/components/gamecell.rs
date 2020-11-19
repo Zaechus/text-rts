@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use rand::Rng;
 
 use bracket_lib::prelude::*;
@@ -30,31 +32,33 @@ impl GameCell {
         }
     }
 
-    pub fn move_pos(&mut self, point: Point, mode: Mode) {
-        self.mode = mode;
+    pub fn move_pos(&mut self, point: Point) {
         self.destination = Some(point);
     }
     pub fn move_towards(&mut self, other: Point) {
         if self.destination.is_none() {
-            let a = if self.x() < other.x {
-                1
-            } else if self.x() > other.x {
-                -1
-            } else {
-                0
+            let a = match self.x().cmp(&other.x) {
+                Ordering::Less => 1,
+                Ordering::Greater => -1,
+                _ => 0,
             };
-            let b = if self.y() < other.y {
-                1
-            } else if self.y() > other.y {
-                -1
-            } else {
-                0
+            let b = match self.y().cmp(&other.y) {
+                Ordering::Less => 1,
+                Ordering::Greater => -1,
+                _ => 0,
             };
             self.destination = Some(Point::new(self.x() + a, self.y() + b));
         }
     }
     pub fn stop_moving(&mut self) {
         self.destination = None;
+    }
+
+    pub fn hold(&mut self) {
+        self.mode = Mode::Hold;
+    }
+    pub fn is_holding(&self) -> bool {
+        self.mode == Mode::Hold
     }
 
     pub fn update(&mut self, dt: f32, speed: f32) {
@@ -160,9 +164,6 @@ impl GameCell {
         } else {
             RGB::new()
         }
-    }
-    pub fn mode(&self) -> Mode {
-        self.mode
     }
     pub fn selected(&self) -> bool {
         self.selected
