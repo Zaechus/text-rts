@@ -303,18 +303,20 @@ impl State {
 
     fn key_input(&mut self, ctx: &mut BTerm) {
         if let Some(key) = ctx.key {
-            if let Mode::Ctrl = self.mode {
-                if let Some(n) = State::key_num(key) {
-                    self.ctrl_groups.bind(n, self.selected.clone());
+            match self.mode {
+                Mode::Ctrl => {
+                    if let Some(n) = State::key_num(key) {
+                        self.ctrl_groups.bind(n, self.selected.clone());
+                    }
+                    self.set_mode(Mode::Select);
                 }
-                self.set_mode(Mode::Select);
-            } else if let Mode::Add = self.mode {
-                if let Some(n) = State::key_num(key) {
-                    self.ctrl_groups.add(n, &mut self.selected.clone());
+                Mode::Add => {
+                    if let Some(n) = State::key_num(key) {
+                        self.ctrl_groups.add(n, &mut self.selected.clone());
+                    }
+                    self.set_mode(Mode::Select);
                 }
-                self.set_mode(Mode::Select);
-            } else {
-                match key {
+                _ => match key {
                     VirtualKeyCode::M => self.set_mode(Mode::Move),
                     VirtualKeyCode::A => self.set_mode(Mode::Attack),
                     VirtualKeyCode::B => self.set_mode(Mode::Build),
@@ -341,7 +343,7 @@ impl State {
                             }
                         }
                     }
-                }
+                },
             }
         }
     }
