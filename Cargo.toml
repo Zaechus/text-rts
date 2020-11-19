@@ -16,3 +16,5 @@ legion = { version = "0.3", default-features = false }
 bracket-lib = { git = "https://github.com/thebracket/bracket-lib", optional = true, default-features = false, features = ["threaded"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 wasm-bindgen = { version = "0.2", optional = true }
+
+winit = "0.23"
