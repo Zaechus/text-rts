@@ -13,7 +13,6 @@ fn main() -> BError {
     } else {
         (1366 / tw, 768 / th)
     };
-    println!("{:?}", size);
 
     let ctx = BTermBuilder::simple(size.0, size.1)?
         .with_tile_dimensions(tw, th)
