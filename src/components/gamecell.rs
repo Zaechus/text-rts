@@ -32,8 +32,8 @@ impl GameCell {
         }
     }
 
-    pub fn move_pos(&mut self, point: Point) {
-        self.mode = Mode::Move;
+    pub fn move_pos(&mut self, point: Point, mode: Mode) {
+        self.mode = mode;
         self.destination = Some(point);
     }
     pub fn move_towards(&mut self, other: Point) {
@@ -53,6 +53,9 @@ impl GameCell {
     }
     pub fn stop_moving(&mut self) {
         self.destination = None;
+    }
+    pub fn is_a_moving(&self) -> bool {
+        self.mode == Mode::Attack
     }
 
     pub fn hold(&mut self) {

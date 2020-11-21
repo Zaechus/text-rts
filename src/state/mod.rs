@@ -143,7 +143,9 @@ impl State {
                 }
                 for (e, e2, dmg) in attacked_units.iter() {
                     if let Ok(cell) = world.entry_mut(*e).unwrap().get_component_mut::<GameCell>() {
-                        cell.stop_moving();
+                        if cell.is_a_moving() {
+                            cell.stop_moving();
+                        }
                     }
                     if let Ok(unit) = world.entry_mut(*e).unwrap().get_component_mut::<Unit>() {
                         unit.reset_tic();
@@ -271,14 +273,14 @@ impl State {
             Some((0, false)) => match self.mode() {
                 Mode::Select => self.select_cells(),
                 Mode::Move | Mode::Attack => {
-                    self.move_cells();
+                    self.move_cells(self.mode());
                     self.set_mode(Mode::Select);
                 }
                 Mode::Ctrl => self.select_same(),
                 _ => (),
             },
             Some((1, false)) => {
-                self.move_cells();
+                self.move_cells(Mode::Move);
                 self.set_mode(Mode::Select);
             }
             _ => (),
@@ -558,15 +560,15 @@ impl State {
         self.mode = Mode::Select;
     }
 
-    fn move_cells(&mut self) {
+    fn move_cells(&mut self, mode: Mode) {
         let mut query = <(Write<GameCell>, Write<Unit>)>::query();
 
         for (cell, unit) in query.iter_mut(&mut self.world) {
             if cell.selected() {
-                cell.move_pos(Point::new(
-                    self.mouse.x - self.offset.0,
-                    self.mouse.y - self.offset.1,
-                ));
+                cell.move_pos(
+                    Point::new(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1),
+                    mode,
+                );
                 unit.reset_tic();
             }
         }
