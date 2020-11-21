@@ -7,7 +7,7 @@ use legion::*;
 
 use crate::{
     components::{GameCell, Unit},
-    types::{CtrlGroups, Mode, Race, UnitKind},
+    types::{CtrlGroups, Direction, Map, Mode, Race, UnitKind},
 };
 
 const WHITE: (u8, u8, u8) = (255, 255, 255);
@@ -41,6 +41,8 @@ pub struct State {
     selection: Rect,
     selected: Vec<Entity>,
     ctrl_groups: CtrlGroups,
+    map: Map,
+    supply: (i32, i32),
 }
 
 impl State {
@@ -210,6 +212,8 @@ impl State {
             selection: Rect::default(),
             selected: Vec::new(),
             ctrl_groups: CtrlGroups::new(),
+            map: Map::new(100, 100),
+            supply: (0, 99),
         }
     }
 
@@ -243,6 +247,8 @@ impl State {
 
         self.print_mode(ctx);
 
+        self.print_cash(ctx);
+
         self.mouse_input();
 
         self.key_input(ctx);
@@ -257,16 +263,41 @@ impl State {
         self.mode = mode;
     }
 
+    fn scroll(&mut self, d: Direction) {
+        match d {
+            Direction::N => {
+                if self.offset.1 < self.map.upper_y() {
+                    self.offset.1 += 1
+                }
+            }
+            Direction::S => {
+                if self.offset.1 > self.map.lower_y() {
+                    self.offset.1 -= 1
+                }
+            }
+            Direction::E => {
+                if self.offset.0 > self.map.lower_x() {
+                    self.offset.0 -= 1
+                }
+            }
+            Direction::W => {
+                if self.offset.0 < self.map.upper_x() {
+                    self.offset.0 += 1
+                }
+            }
+        }
+    }
+
     fn mouse_input(&mut self) {
         if self.mouse.x <= 0 {
-            self.offset.0 += 1;
+            self.scroll(Direction::W);
         } else if self.mouse.x >= self.window_size.0 as i32 - 1 {
-            self.offset.0 -= 1;
+            self.scroll(Direction::E);
         }
         if self.mouse.y <= 0 {
-            self.offset.1 += 1;
+            self.scroll(Direction::N);
         } else if self.mouse.y >= self.window_size.1 as i32 - 1 {
-            self.offset.1 -= 1;
+            self.scroll(Direction::S);
         }
 
         match self.mouse_click {
@@ -332,10 +363,10 @@ impl State {
                     VirtualKeyCode::LShift | VirtualKeyCode::RShift => self.set_mode(Mode::Add),
 
                     VirtualKeyCode::Escape => self.set_mode(Mode::Select),
-                    VirtualKeyCode::Up => self.offset.1 += 1,
-                    VirtualKeyCode::Down => self.offset.1 -= 1,
-                    VirtualKeyCode::Left => self.offset.0 += 1,
-                    VirtualKeyCode::Right => self.offset.0 -= 1,
+                    VirtualKeyCode::Up => self.scroll(Direction::N),
+                    VirtualKeyCode::Down => self.scroll(Direction::S),
+                    VirtualKeyCode::Left => self.scroll(Direction::W),
+                    VirtualKeyCode::Right => self.scroll(Direction::E),
                     VirtualKeyCode::End => self.curr_state = CurrentState::Quitting,
                     _ => {
                         if let Some(n) = State::key_num(key) {
@@ -389,39 +420,56 @@ impl State {
     }
 
     fn print_mode(&mut self, ctx: &mut BTerm) {
-        let mut w = 0;
-        let mut color = RGB::new();
-        let mut s = "";
-        match self.mode() {
-            Mode::Move => {
-                w = 5;
-                color = RGB::from_u8(0, 175, 0);
-                s = "Move";
+        if let Mode::Select = self.mode {
+        } else {
+            let mut w = 0;
+            let mut color = RGB::new();
+            let mut s = "";
+            match self.mode() {
+                Mode::Move => {
+                    w = 5;
+                    color = RGB::from_u8(0, 175, 0);
+                    s = "Move";
+                }
+                Mode::Attack => {
+                    w = 7;
+                    color = RGB::from_u8(175, 0, 0);
+                    s = "Attack";
+                }
+                Mode::Build => {
+                    w = 6;
+                    color = RGB::from_u8(0, 0, 175);
+                    s = "Build";
+                }
+                Mode::Ctrl => {
+                    w = 5;
+                    color = RGB::from_u8(75, 75, 75);
+                    s = "Ctrl"
+                }
+                Mode::Add => {
+                    w = 4;
+                    color = RGB::from_u8(75, 75, 75);
+                    s = "Add"
+                }
+                _ => (),
             }
-            Mode::Attack => {
-                w = 7;
-                color = RGB::from_u8(175, 0, 0);
-                s = "Attack";
-            }
-            Mode::Build => {
-                w = 6;
-                color = RGB::from_u8(0, 0, 175);
-                s = "Build";
-            }
-            Mode::Ctrl => {
-                w = 5;
-                color = RGB::from_u8(75, 75, 75);
-                s = "Ctrl"
-            }
-            Mode::Add => {
-                w = 4;
-                color = RGB::from_u8(75, 75, 75);
-                s = "Add"
-            }
-            _ => (),
+            ctx.draw_box(0, 0, w, 2, color, color);
+            ctx.print_color(1, 1, RGB::named(WHITE), color, s)
         }
-        ctx.draw_box(0, 0, w, 2, color, color);
-        ctx.print_color(1, 1, RGB::named(WHITE), color, s)
+    }
+
+    fn print_cash(&self, ctx: &mut BTerm) {
+        ctx.print_color(
+            self.window_size.0 - 7,
+            0,
+            RGB::named(WHITE),
+            RGB::named(BLACK),
+            format!(
+                "{s:>w$}",
+                s = format!("{} / {}", self.supply.0, self.supply.1),
+                w = 7
+            ),
+        );
     }
 
     fn render_cells(&mut self, ctx: &mut BTerm) {
@@ -597,13 +645,26 @@ impl State {
 
     fn focus_cell(&mut self) {
         let mut query = <(Write<GameCell>, Write<Unit>)>::query();
-
         for (cell, _) in query.iter_mut(&mut self.world) {
             if cell.selected() {
-                self.offset = (
-                    -cell.x() + self.window_size.0 as i32 / 2,
-                    -cell.y() + self.window_size.1 as i32 / 2,
-                );
+                let x = -cell.x() + self.window_size.0 as i32 / 2;
+                let x = if x < self.map.lower_x() {
+                    self.map.lower_x()
+                } else if x > self.map.upper_x() {
+                    self.map.upper_x()
+                } else {
+                    x
+                };
+                let y = -cell.y() + self.window_size.1 as i32 / 2;
+                let y = if y < self.map.lower_y() {
+                    self.map.lower_y()
+                } else if y > self.map.upper_y() {
+                    self.map.upper_y()
+                } else {
+                    y
+                };
+
+                self.offset = (x, y);
             }
         }
     }
