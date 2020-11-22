@@ -339,7 +339,9 @@ impl State {
             match self.mode {
                 Mode::Ctrl => {
                     if let Some(n) = State::key_num(key) {
-                        self.ctrl_groups.bind(n, self.selected.clone());
+                        if !self.selected.is_empty() {
+                            self.ctrl_groups.bind(n, self.selected.clone());
+                        }
                     }
                     self.set_mode(Mode::Select);
                 }
