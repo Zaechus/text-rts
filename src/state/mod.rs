@@ -535,7 +535,6 @@ impl State {
                     {
                         cell.select();
                         self.selected.push(e);
-                        break;
                     } else if self.mode != Mode::Add {
                         cell.deselect();
                     }
