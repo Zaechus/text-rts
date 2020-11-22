@@ -20,7 +20,7 @@ A text-based sci-fi themed real-time strategy game made with Rust, Bracket-lib, 
 * Ctrl -> Left click unit : Select all nearby units of the same type
 * Shift -> select units : Add units to current unit selection
 * Ctrl -> <0-9> : Set control group to current unit selection
-* Shifrt -> <0-9> : Add current unit selection to control group
+* Shift -> <0-9> : Add current unit selection to control group
 * <0-9> : Select the control group
-* Shift+<F2-F4> : Create a camera hotkey
-* <F2-F4> : Move to a camera location
+* Shift -> [f2-f4] : Create a camera hotkey
+* [f2-f4] : Move to a camera location
