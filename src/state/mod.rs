@@ -302,7 +302,7 @@ impl State {
 
         match self.mouse_click {
             Some((0, false)) => match self.mode() {
-                Mode::Select => self.select_cells(),
+                Mode::Select | Mode::Add => self.select_cells(),
                 Mode::Move | Mode::Attack => {
                     self.move_cells(self.mode());
                     self.set_mode(Mode::Select);
@@ -384,7 +384,7 @@ impl State {
     }
 
     fn draw_highlight_box(&mut self, ctx: &mut BTerm) {
-        if let Mode::Select = self.mode {
+        if let Mode::Select | Mode::Add = self.mode {
             self.selection.x2 = self.mouse.x;
             self.selection.y2 = self.mouse.y;
             if self.mouse_pressed.0 == 0 && self.mouse_pressed.1 {
@@ -523,7 +523,9 @@ impl State {
     fn select_cells(&mut self) {
         let mut query = <(Write<GameCell>,)>::query();
 
-        self.selected = Vec::new();
+        if self.mode != Mode::Add {
+            self.selected = Vec::new();
+        }
 
         if self.selection.width() == 0 || self.selection.height() == 0 {
             for chunk in query.iter_chunks_mut(&mut self.world) {
@@ -534,7 +536,7 @@ impl State {
                         cell.select();
                         self.selected.push(e);
                         break;
-                    } else {
+                    } else if self.mode != Mode::Add {
                         cell.deselect();
                     }
                 }
@@ -564,7 +566,7 @@ impl State {
                     )) {
                         cell.select();
                         self.selected.push(e);
-                    } else {
+                    } else if self.mode != Mode::Add {
                         cell.deselect();
                     }
                 }
