@@ -238,7 +238,11 @@ impl State {
         ctx.print_color(
             self.mouse.x,
             self.mouse.y,
-            RGB::named((0, 155 + self.tic, 0)),
+            if let Mode::Attack = self.mode {
+                RGB::named((155 + self.tic, 0, 0))
+            } else {
+                RGB::named((0, 155 + self.tic, 0))
+            },
             RGB::new(),
             &self.cursor,
         );
