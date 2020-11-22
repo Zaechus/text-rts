@@ -20,7 +20,7 @@ legion = { version = "0.3", default-features = false }
 bracket-lib = { git = "https://github.com/thebracket/bracket-lib", version = "0.8", default-features = false, features = ["threaded"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 
-winit = { version = "0.23", optional = true }
-
 wasm-bindgen = { version = "0.2", optional = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+winit = "0.23"
