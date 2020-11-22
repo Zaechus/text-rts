@@ -371,8 +371,16 @@ impl State {
                     self.set_mode(Mode::Select);
                 }
                 _ => match key {
-                    VirtualKeyCode::M => self.set_mode(Mode::Move),
-                    VirtualKeyCode::A => self.set_mode(Mode::Attack),
+                    VirtualKeyCode::M => {
+                        if !self.selected.is_empty() {
+                            self.set_mode(Mode::Move)
+                        }
+                    }
+                    VirtualKeyCode::A => {
+                        if !self.selected.is_empty() {
+                            self.set_mode(Mode::Attack)
+                        }
+                    }
                     VirtualKeyCode::B => self.set_mode(Mode::Build),
                     VirtualKeyCode::S => self.stop_cells(),
                     VirtualKeyCode::H => self.hold_cells(),
@@ -498,6 +506,7 @@ impl State {
     }
 
     fn print_bottom_bar(&self, ctx: &mut BTerm) {
+        // full bar
         ctx.draw_box(
             0,
             self.window_size.1 - 5,
@@ -506,6 +515,43 @@ impl State {
             RGB::named(WHITE),
             RGB::named(BLACK),
         );
+        // mini map
+        ctx.draw_box(
+            0,
+            self.window_size.1 - 5,
+            4,
+            4,
+            RGB::named(WHITE),
+            RGB::named(BLACK),
+        );
+        // command grid
+        ctx.draw_box(
+            self.window_size.0 - 5,
+            self.window_size.1 - 5,
+            4,
+            4,
+            RGB::named(WHITE),
+            RGB::named(BLACK),
+        );
+
+        let commands = [
+            (GREEN, "M"),
+            (YELLOW, "S"),
+            (RED, "A"),
+            (BLACK, ""),
+            (ORANGE, "H"),
+            (BLACK, ""),
+            (BLUE, "B"),
+        ];
+        for (index, (color, letter)) in commands.iter().enumerate() {
+            ctx.print_color(
+                self.window_size.0 as usize - 4 + index % 3,
+                self.window_size.1 as usize - 4 + index / 3,
+                RGB::named(*color),
+                RGB::named(BLACK),
+                letter,
+            );
+        }
 
         if self.mouse.y > self.window_size.1 as i32 - 5 {
             self.print_cursor(ctx);
@@ -609,6 +655,8 @@ impl State {
                 }
             }
         }
+
+        self.mode = Mode::Select;
     }
 
     fn select_same(&mut self) {
