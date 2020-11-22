@@ -229,12 +229,7 @@ impl State {
         }
     }
 
-    fn play_state(&mut self, ctx: &mut BTerm) {
-        let mut resources = Resources::default();
-        self.schedule.execute(&mut self.world, &mut resources);
-
-        self.print_grid(ctx);
-
+    fn print_cursor(&self, ctx: &mut BTerm) {
         ctx.print_color(
             self.mouse.x,
             self.mouse.y,
@@ -246,6 +241,17 @@ impl State {
             RGB::new(),
             &self.cursor,
         );
+    }
+
+    fn play_state(&mut self, ctx: &mut BTerm) {
+        let mut resources = Resources::default();
+        self.schedule.execute(&mut self.world, &mut resources);
+
+        self.print_grid(ctx);
+
+        if self.mouse.y < self.window_size.1 as i32 - 5 {
+            self.print_cursor(ctx);
+        }
 
         self.render_cells(ctx);
 
@@ -258,6 +264,8 @@ impl State {
         self.key_input(ctx);
 
         self.draw_highlight_box(ctx);
+
+        self.print_bottom_bar(ctx);
     }
 
     fn mode(&self) -> Mode {
@@ -351,7 +359,14 @@ impl State {
                 }
                 Mode::Add => {
                     if let Some(n) = State::key_num(key) {
-                        self.ctrl_groups.add(n, &mut self.selected.clone());
+                        self.ctrl_groups.add_to(n, &mut self.selected.clone());
+                    } else {
+                        match key {
+                            VirtualKeyCode::F2 => self.ctrl_groups.set_cam(0, self.offset),
+                            VirtualKeyCode::F3 => self.ctrl_groups.set_cam(1, self.offset),
+                            VirtualKeyCode::F4 => self.ctrl_groups.set_cam(2, self.offset),
+                            _ => (),
+                        }
                     }
                     self.set_mode(Mode::Select);
                 }
@@ -367,6 +382,10 @@ impl State {
                         self.set_mode(Mode::Ctrl)
                     }
                     VirtualKeyCode::LShift | VirtualKeyCode::RShift => self.set_mode(Mode::Add),
+
+                    VirtualKeyCode::F2 => self.offset = self.ctrl_groups.cam(0),
+                    VirtualKeyCode::F3 => self.offset = self.ctrl_groups.cam(1),
+                    VirtualKeyCode::F4 => self.offset = self.ctrl_groups.cam(2),
 
                     VirtualKeyCode::Escape => self.set_mode(Mode::Select),
                     VirtualKeyCode::Up => self.scroll(Direction::N),
@@ -419,7 +438,7 @@ impl State {
 
     fn print_grid(&mut self, ctx: &mut BTerm) {
         for x in 0..self.window_size.0 {
-            for y in 0..self.window_size.1 - 1 {
+            for y in 0..self.window_size.1 - 5 {
                 ctx.print_color(x as i32, y as i32, RGB::named(DARK_GRAY), RGB::new(), ".")
             }
         }
@@ -478,6 +497,21 @@ impl State {
         );
     }
 
+    fn print_bottom_bar(&self, ctx: &mut BTerm) {
+        ctx.draw_box(
+            0,
+            self.window_size.1 - 5,
+            self.window_size.0 - 1,
+            4,
+            RGB::named(WHITE),
+            RGB::named(BLACK),
+        );
+
+        if self.mouse.y > self.window_size.1 as i32 - 5 {
+            self.print_cursor(ctx);
+        }
+    }
+
     fn render_cells(&mut self, ctx: &mut BTerm) {
         let mut query = <(Write<GameCell>, Write<Unit>)>::query();
 
@@ -531,7 +565,7 @@ impl State {
             self.selected = Vec::new();
         }
 
-        if self.selection.width() == 0 || self.selection.height() == 0 {
+        if self.selection.width() == 0 && self.selection.height() == 0 {
             for chunk in query.iter_chunks_mut(&mut self.world) {
                 for (e, (cell,)) in chunk.into_iter_entities() {
                     if self.mouse.x == cell.x() + self.offset.0
