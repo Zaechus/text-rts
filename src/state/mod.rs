@@ -7,7 +7,7 @@ use legion::*;
 
 use crate::{
     components::{GameCell, Unit},
-    types::{CtrlGroups, Direction, Map, Mode, Race, UnitKind},
+    types::{CtrlGroups, Direction, Map, Mode, Mouse, Race, UnitKind},
 };
 
 const WHITE: (u8, u8, u8) = (255, 255, 255);
@@ -33,12 +33,8 @@ pub struct State {
     #[cfg(not(target_arch = "wasm32"))]
     instant: Instant,
     offset: (i32, i32),
-    mouse: Point,
-    mouse_click: Option<(usize, bool)>,
-    mouse_pressed: (usize, bool, bool),
+    mouse: Mouse,
     mode: Mode,
-    cursor: String,
-    selection: Rect,
     selected: Vec<Entity>,
     ctrl_groups: CtrlGroups,
     map: Map,
@@ -204,12 +200,8 @@ impl State {
             instant: Instant::now(),
             tic: 0,
             offset: (0, 0),
-            mouse: Point::new(0, 0),
-            mouse_click: None,
-            mouse_pressed: (0, false, false),
+            mouse: Mouse::new(),
             mode: Mode::Select,
-            cursor: String::from("<"),
-            selection: Rect::default(),
             selected: Vec::new(),
             ctrl_groups: CtrlGroups::new(),
             map: Map::new(100, 100),
@@ -229,28 +221,14 @@ impl State {
         }
     }
 
-    fn print_cursor(&self, ctx: &mut BTerm) {
-        ctx.print_color(
-            self.mouse.x,
-            self.mouse.y,
-            if let Mode::Attack = self.mode {
-                RGB::named((155 + self.tic, 0, 0))
-            } else {
-                RGB::named((0, 155 + self.tic, 0))
-            },
-            RGB::new(),
-            &self.cursor,
-        );
-    }
-
     fn play_state(&mut self, ctx: &mut BTerm) {
         let mut resources = Resources::default();
         self.schedule.execute(&mut self.world, &mut resources);
 
         self.print_grid(ctx);
 
-        if self.mouse.y < self.window_size.1 as i32 - 5 {
-            self.print_cursor(ctx);
+        if self.mouse.y() < self.window_size.1 as i32 - 5 {
+            self.mouse.print_cursor(ctx, self.mode, self.tic);
         }
 
         self.render_cells(ctx);
@@ -301,18 +279,18 @@ impl State {
     }
 
     fn mouse_input(&mut self) {
-        if self.mouse.x <= 0 {
+        if self.mouse.x() <= 0 {
             self.scroll(Direction::W);
-        } else if self.mouse.x >= self.window_size.0 as i32 - 1 {
+        } else if self.mouse.x() >= self.window_size.0 as i32 - 1 {
             self.scroll(Direction::E);
         }
-        if self.mouse.y <= 0 {
+        if self.mouse.y() <= 0 {
             self.scroll(Direction::N);
-        } else if self.mouse.y >= self.window_size.1 as i32 - 1 {
+        } else if self.mouse.y() >= self.window_size.1 as i32 - 1 {
             self.scroll(Direction::S);
         }
 
-        match self.mouse_click {
+        match self.mouse.click {
             Some((0, false)) => match self.mode() {
                 Mode::Select | Mode::Add => self.select_cells(),
                 Mode::Move | Mode::Attack => {
@@ -416,30 +394,30 @@ impl State {
 
     fn draw_highlight_box(&mut self, ctx: &mut BTerm) {
         if let Mode::Select | Mode::Add = self.mode {
-            self.selection.x2 = self.mouse.x;
-            self.selection.y2 = self.mouse.y;
-            if self.mouse_pressed.0 == 0 && self.mouse_pressed.1 {
-                let x = if self.selection.x1 <= self.selection.x2 {
-                    self.selection.x1
+            self.mouse.selection.x2 = self.mouse.x();
+            self.mouse.selection.y2 = self.mouse.y();
+            if self.mouse.left_pressed() && self.mouse.is_pressed() {
+                let x = if self.mouse.selection.x1 <= self.mouse.selection.x2 {
+                    self.mouse.selection.x1
                 } else {
-                    self.selection.x2
+                    self.mouse.selection.x2
                 };
-                let y = if self.selection.y1 <= self.selection.y2 {
-                    self.selection.y1
+                let y = if self.mouse.selection.y1 <= self.mouse.selection.y2 {
+                    self.mouse.selection.y1
                 } else {
-                    self.selection.y2
+                    self.mouse.selection.y2
                 };
                 ctx.draw_hollow_box(
                     x,
                     y,
-                    self.selection.width(),
-                    self.selection.height(),
+                    self.mouse.selection.width(),
+                    self.mouse.selection.height(),
                     RGB::named(GREEN),
                     RGB::new(),
                 );
             } else {
-                self.selection.x1 = self.mouse.x;
-                self.selection.y1 = self.mouse.y;
+                self.mouse.selection.x1 = self.mouse.x();
+                self.mouse.selection.y1 = self.mouse.y();
             }
         }
     }
@@ -553,8 +531,8 @@ impl State {
             );
         }
 
-        if self.mouse.y > self.window_size.1 as i32 - 5 {
-            self.print_cursor(ctx);
+        if self.mouse.y() > self.window_size.1 as i32 - 5 {
+            self.mouse.print_cursor(ctx, self.mode, self.tic);
         }
     }
 
@@ -573,8 +551,8 @@ impl State {
                 ctx.print_color(
                     cell.x() + self.offset.0,
                     cell.y() + self.offset.1,
-                    if self.mouse.x - self.offset.0 == cell.x()
-                        && self.mouse.y - self.offset.1 == cell.y()
+                    if self.mouse.x() - self.offset.0 == cell.x()
+                        && self.mouse.y() - self.offset.1 == cell.y()
                     {
                         cell.color_bright()
                     } else {
@@ -611,11 +589,11 @@ impl State {
             self.selected = Vec::new();
         }
 
-        if self.selection.width() == 0 && self.selection.height() == 0 {
+        if self.mouse.select_one() {
             for chunk in query.iter_chunks_mut(&mut self.world) {
                 for (e, (cell,)) in chunk.into_iter_entities() {
-                    if self.mouse.x == cell.x() + self.offset.0
-                        && self.mouse.y == cell.y() + self.offset.1
+                    if self.mouse.x() == cell.x() + self.offset.0
+                        && self.mouse.y() == cell.y() + self.offset.1
                     {
                         cell.select();
                         self.selected.push(e);
@@ -627,26 +605,10 @@ impl State {
         } else {
             for chunk in query.iter_chunks_mut(&mut self.world) {
                 for (e, (cell,)) in chunk.into_iter_entities() {
-                    let x = if self.selection.x1 <= self.selection.x2 {
-                        self.selection.x1
-                    } else {
-                        self.selection.x2
-                    };
-                    let y = if self.selection.y1 <= self.selection.y2 {
-                        self.selection.y1
-                    } else {
-                        self.selection.y2
-                    };
-                    if Rect::with_size(
-                        x,
-                        y,
-                        self.selection.width() + 1,
-                        self.selection.height() + 1,
-                    )
-                    .point_in_rect(Point::new(
-                        cell.x() + self.offset.0,
-                        cell.y() + self.offset.1,
-                    )) {
+                    if self
+                        .mouse
+                        .point_in_selection(cell.x() + self.offset.0, cell.y() + self.offset.1)
+                    {
                         cell.select();
                         self.selected.push(e);
                     } else if self.mode != Mode::Add {
@@ -666,10 +628,10 @@ impl State {
 
         let mut kind = None;
 
-        if self.selection.width() == 0 || self.selection.height() == 0 {
+        if self.mouse.select_one() {
             for (cell, unit) in query.iter_mut(&mut self.world) {
-                if self.mouse.x == cell.x() + self.offset.0
-                    && self.mouse.y == cell.y() + self.offset.1
+                if self.mouse.x() == cell.x() + self.offset.0
+                    && self.mouse.y() == cell.y() + self.offset.1
                 {
                     kind = Some(unit.kind());
                     break;
@@ -703,7 +665,10 @@ impl State {
         for (cell, unit) in query.iter_mut(&mut self.world) {
             if cell.selected() {
                 cell.move_pos(
-                    Point::new(self.mouse.x - self.offset.0, self.mouse.y - self.offset.1),
+                    Point::new(
+                        self.mouse.x() - self.offset.0,
+                        self.mouse.y() - self.offset.1,
+                    ),
                     mode,
                 );
                 unit.reset_tic();
@@ -778,22 +743,22 @@ impl State {
 
     #[cfg(target_arch = "wasm32")]
     fn get_input(&mut self) {
-        self.mouse_pressed.2 = false;
+        self.mouse.pressed.2 = false;
 
         let mut input = INPUT.lock();
 
         input.for_each_message(|event| match event {
             BEvent::MouseButtonUp { button } => {
-                self.mouse_pressed = (button, false, self.mouse_pressed.1)
+                self.mouse.pressed = (button, false, self.mouse.pressed.1)
             }
             BEvent::MouseButtonDown { button } => {
-                self.mouse_pressed = (button, true, self.mouse_pressed.1)
+                self.mouse.pressed = (button, true, self.mouse.pressed.1)
             }
             _ => (),
         });
 
-        if !self.mouse_pressed.1 && self.mouse_pressed.2 {
-            self.mouse_click = Some((self.mouse_pressed.0, false))
+        if !self.mouse.pressed.1 && self.mouse.was_pressed() {
+            self.mouse.click = Some((self.mouse.pressed.0, false))
         }
     }
     #[cfg(not(target_arch = "wasm32"))]
@@ -801,9 +766,9 @@ impl State {
         let mut input = INPUT.lock();
 
         input.for_each_message(|event| match event {
-            BEvent::MouseClick { button, pressed } => self.mouse_click = Some((button, pressed)),
-            BEvent::MouseButtonUp { button } => self.mouse_pressed = (button, false, false),
-            BEvent::MouseButtonDown { button } => self.mouse_pressed = (button, true, false),
+            BEvent::MouseClick { button, pressed } => self.mouse.click = Some((button, pressed)),
+            BEvent::MouseButtonUp { button } => self.mouse.pressed = (button, false, false),
+            BEvent::MouseButtonDown { button } => self.mouse.pressed = (button, true, false),
             _ => (),
         });
     }
@@ -822,7 +787,7 @@ impl GameState for State {
             self.tic = 0;
         }
 
-        self.mouse = ctx.mouse_point();
+        self.mouse.point = ctx.mouse_point();
 
         match self.curr_state {
             CurrentState::Menu => self.menu_state(ctx),
@@ -830,6 +795,6 @@ impl GameState for State {
             CurrentState::Quitting => self.quit_state(ctx),
         }
 
-        self.mouse_click = None;
+        self.mouse.click = None;
     }
 }
