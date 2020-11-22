@@ -111,7 +111,7 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 [[package]]
 name = "bracket-algorithm-traits"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "bracket-geometry",
  "smallvec",
@@ -120,17 +120,17 @@ dependencies = [
 [[package]]
 name = "bracket-color"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "byteorder",
  "lazy_static",
- "parking_lot 0.10.2",
+ "parking_lot 0.11.1",
 ]
 
 [[package]]
 name = "bracket-geometry"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "ultraviolet",
 ]
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "bracket-lib"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-color",
@@ -152,7 +152,7 @@ dependencies = [
 [[package]]
 name = "bracket-noise"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "bracket-random",
 ]
@@ -160,7 +160,7 @@ dependencies = [
 [[package]]
 name = "bracket-pathfinding"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "bracket-algorithm-traits",
  "bracket-geometry",
@@ -171,7 +171,7 @@ dependencies = [
 [[package]]
 name = "bracket-random"
 version = "0.8.0"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "lazy_static",
  "rand",
@@ -182,7 +182,7 @@ dependencies = [
 [[package]]
 name = "bracket-terminal"
 version = "0.8.1"
-source = "git+https://github.com/thebracket/bracket-lib#5990939443a2e30f1ed45b207c50af8f896f841b"
+source = "git+https://github.com/thebracket/bracket-lib#d887e5b03711d87e8760fa1c42cdb1407bd23086"
 dependencies = [
  "bracket-color",
  "bracket-geometry",
@@ -195,13 +195,14 @@ dependencies = [
  "image",
  "lazy_static",
  "object-pool",
- "parking_lot 0.10.2",
+ "parking_lot 0.11.1",
  "rand",
  "ultraviolet",
  "wasm-bindgen",
  "wasm-timer",
  "web-sys",
  "winit 0.22.2",
+ "winit 0.23.0",
 ]
 
 [[package]]
@@ -245,9 +246,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.63"
+version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad9c6140b5a2c7db40ea56eb1821245e5362b44385c05b76288b1a599934ac87"
+checksum = "95752358c8f7552394baf48cd82695b345628ad3f170d607de3ca03b8dacca15"
 
 [[package]]
 name = "cfg-if"
@@ -608,7 +609,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b11f15d1e3268f140f68d390637d5e76d849782d971ae7063e0da69fe9709a76"
 dependencies = [
- "libloading 0.6.5",
+ "libloading",
 ]
 
 [[package]]
@@ -736,29 +737,29 @@ dependencies = [
 
 [[package]]
 name = "glutin"
-version = "0.24.1"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a9666c8fd9afd008f6559e2468c35e11aad1d110d525bb3b354e4138ec0e20f"
+checksum = "d8bae26a39a728b003e9fad473ea89527de0de050143b4df866f18bb154bc86e"
 dependencies = [
  "android_glue",
  "cgl",
- "cocoa 0.20.2",
- "core-foundation 0.7.0",
- "core-graphics 0.19.2",
+ "cocoa 0.23.0",
+ "core-foundation 0.9.1",
  "glutin_egl_sys",
  "glutin_emscripten_sys",
  "glutin_gles2_sys",
  "glutin_glx_sys",
  "glutin_wgl_sys",
  "lazy_static",
- "libloading 0.5.2",
+ "libloading",
  "log",
  "objc",
  "osmesa-sys",
- "parking_lot 0.10.2",
- "wayland-client 0.23.6",
+ "parking_lot 0.11.1",
+ "wayland-client 0.28.2",
+ "wayland-egl",
  "winapi 0.3.9",
- "winit 0.22.2",
+ "winit 0.23.0",
 ]
 
 [[package]]
@@ -958,16 +959,6 @@ name = "libc"
 version = "0.2.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
-
-[[package]]
-name = "libloading"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b111a074963af1d37a139918ac6d49ad1d0d5e47f72fd55388619691a7d753"
-dependencies = [
- "cc",
- "winapi 0.3.9",
-]
 
 [[package]]
 name = "libloading"
@@ -1254,9 +1245,9 @@ dependencies = [
 
 [[package]]
 name = "nom"
-version = "5.1.2"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
+checksum = "4489ccc7d668957ddf64af7cd027c081728903afa6479d35da7e99bf5728f75f"
 dependencies = [
  "memchr",
  "version_check",
@@ -1665,6 +1656,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "safe_arch"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ff3d6d9696af502cc3110dacce942840fb06ff4514cad92236ecc455f2ce05"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1797,11 +1797,11 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fd8b795c389288baa5f355489c65e71fd48a02104600d15c4cfbc561e9e429d"
+checksum = "2c29947abdee2a218277abeca306f25789c938e500ea5a9d4b12a5a504466902"
 dependencies = [
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "libc",
  "redox_syscall",
  "winapi 0.3.9",
@@ -1824,9 +1824,9 @@ checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
 name = "syn"
-version = "1.0.48"
+version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc371affeffc477f42a221a1e4297aedcea33d47d19b61455588bd9d8f6b19ac"
+checksum = "443b4178719c5a851e1bde36ce12da21d74a0e60b4d982ec3385a933c812f0f6"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -1912,9 +1912,9 @@ checksum = "3e5d7cd7ab3e47dda6e56542f4bbf3824c15234958c6e1bd6aaa347e93499fdc"
 
 [[package]]
 name = "ultraviolet"
-version = "0.4.6"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "432f35260aff6ee992f3027a1166eaebd7c6ebc0844188b0e545f7fa2121daf7"
+checksum = "c6650a58414f856056ccc651abd3b9d80c384206250c3a621224497503a0f9f2"
 dependencies = [
  "wide",
 ]
@@ -2105,6 +2105,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wayland-egl"
+version = "0.28.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "308f3ec651a099d1aa4e60625c81f67b4264d72d1b524bc7fb1a7675f7c050b4"
+dependencies = [
+ "wayland-client 0.28.2",
+ "wayland-sys 0.28.2",
+]
+
+[[package]]
 name = "wayland-protocols"
 version = "0.23.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2183,11 +2193,12 @@ dependencies = [
 
 [[package]]
 name = "wide"
-version = "0.4.6"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5825a3b8b18b67af1c24165f8ae1feb8f691222736d14099c3483effed2ea729"
+checksum = "80b27c76ecc22bd81fe681d9c9eac81e002d7b7048105ee4608f57c4e92e9211"
 dependencies = [
  "bytemuck",
+ "safe_arch",
 ]
 
 [[package]]
@@ -2321,9 +2332,9 @@ dependencies = [
 
 [[package]]
 name = "xcursor"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3a481cfdefd35e1c50073ae33a8000d695c98039544659f5dc5dd71311b0d01"
+checksum = "3a9a231574ae78801646617cefd13bfe94be907c0e4fa979cfd8b770aa3c5d08"
 dependencies = [
  "nom",
 ]
