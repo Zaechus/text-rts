@@ -26,7 +26,7 @@ impl GameCell {
             color,
             selected: false,
             destination: None,
-            mode: Mode::Move,
+            mode: Mode::Select,
             tic: 0.0,
             harmed: false,
         }
@@ -51,15 +51,24 @@ impl GameCell {
             self.destination = Some(Point::new(self.x() + a, self.y() + b));
         }
     }
+    pub fn move_to_attacker(&mut self, other: Point) {
+        if !self.is_holding() && !self.is_moving() {
+            self.move_pos(other, Mode::Attack);
+        }
+    }
     pub fn stop_moving(&mut self) {
+        if !self.is_holding() {
+            self.mode = Mode::Select
+        };
         self.destination = None;
     }
-    pub fn is_a_moving(&self) -> bool {
-        self.mode == Mode::Attack
+    pub fn is_moving(&self) -> bool {
+        self.mode == Mode::Move
     }
 
     pub fn hold(&mut self) {
         self.mode = Mode::Hold;
+        self.destination = None;
     }
     pub fn is_holding(&self) -> bool {
         self.mode == Mode::Hold
@@ -90,7 +99,7 @@ impl GameCell {
             if Rect::with_exact(dest.x - 1, dest.y - 1, dest.x + 1, dest.y + 1)
                 .point_in_rect(self.point())
             {
-                self.destination = None;
+                self.stop_moving();
             }
         } else {
             self.point.x = self.point.x.round();
@@ -120,7 +129,12 @@ impl GameCell {
     /// Given a positive range value, return the range of the cell as a Rect
     pub fn range_rect(&self, r: u32) -> Rect {
         let r = r as i32 + 1;
-        Rect::with_exact(self.x() - r, self.y() - r, self.x() + r, self.y() + r)
+        Rect::with_exact(
+            self.x() - r,
+            self.y() - r,
+            self.x() + r + 1,
+            self.y() + r + 1,
+        )
     }
 
     /// Select the cell

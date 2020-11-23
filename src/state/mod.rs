@@ -45,7 +45,7 @@ impl State {
     pub fn new(w: u32, h: u32) -> Self {
         let mut world = World::default();
 
-        let mut units = Vec::new();
+        let mut units = Vec::with_capacity(145);
         for x in 0..20 {
             units.push((
                 GameCell::new(10 - (x & 1), x + 5, 'V', RGB::named(GREEN)),
@@ -68,6 +68,15 @@ impl State {
                 ));
             }
         }
+        for x in 0..5 {
+            units.push((
+                GameCell::new(x + 25, 35, 'T', RGB::named(BLUE)),
+                Unit::new(Race::Alien, UnitKind::Trooper, 20)
+                    .with_damage(2)
+                    .with_range(5, 8)
+                    .with_speed(10.5),
+            ));
+        }
         world.extend(units);
 
         let bump_units = SystemBuilder::new("bump_units")
@@ -78,11 +87,13 @@ impl State {
                 let mut bumped = Vec::new();
                 for chunk in query.iter_chunks(world) {
                     for (e, (cell,)) in chunk.into_iter_entities() {
-                        for inner_chunk in inner_query.iter_chunks(world) {
-                            for (e2, (cell2,)) in inner_chunk.into_iter_entities() {
-                                if !cell.is_holding() && e != e2 && cell.point() == cell2.point() {
-                                    bumped.push(e);
-                                    break;
+                        if !cell.is_holding() {
+                            for inner_chunk in inner_query.iter_chunks(world) {
+                                for (e2, (cell2,)) in inner_chunk.into_iter_entities() {
+                                    if e != e2 && cell.point() == cell2.point() {
+                                        bumped.push(e);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -102,66 +113,77 @@ impl State {
             .write_component::<GameCell>()
             .write_component::<Unit>()
             .build(|_, world, _, (query, attack_query, moving_query)| {
-                let mut attacked_units = Vec::new();
+                let mut attacking_units = Vec::new();
                 let mut moving_units = Vec::new();
                 for chunk in query.iter_chunks(world) {
                     for (e, (cell, unit)) in chunk.into_iter_entities() {
                         let mut attacked = false;
                         for attack_chunk in attack_query.iter_chunks(world) {
                             for (e2, (cell2, unit2)) in attack_chunk.into_iter_entities() {
-                                if e != e2
-                                    && unit.race() != unit2.race()
+                                if unit.race() != unit2.race()
                                     && cell.range_rect(unit.range()).point_in_rect(cell2.point())
                                 {
-                                    if let Some(damage) = unit.attack() {
-                                        attacked_units.push((e, e2, damage));
-                                    }
+                                    attacking_units.push((e, e2, unit.attack(), cell.point()));
                                     attacked = true;
                                     break;
                                 }
                             }
                         }
-                        if !attacked {
-                            for moving_chunk in moving_query.iter_chunks(world) {
-                                for (e2, (cell2, unit2)) in moving_chunk.into_iter_entities() {
-                                    if e != e2
-                                        && !cell.is_holding()
-                                        && unit.race() != unit2.race()
-                                        && cell
-                                            .range_rect(unit.follow_dist())
-                                            .point_in_rect(cell2.point())
-                                    {
-                                        moving_units.push((e, cell2.point()));
-                                        break;
-                                    }
+                        if !attacked && !cell.is_holding() {
+                            for (cell2, unit2) in moving_query.iter(world) {
+                                if unit.race() != unit2.race()
+                                    && cell
+                                        .range_rect(unit.follow_dist())
+                                        .point_in_rect(cell2.point())
+                                {
+                                    moving_units.push((e, cell2.point()));
+                                    break;
                                 }
                             }
                         }
                     }
                 }
-                for (e, e2, dmg) in attacked_units.iter() {
-                    if let Ok(cell) = world.entry_mut(*e).unwrap().get_component_mut::<GameCell>() {
-                        if cell.is_a_moving() {
+                for (e, e2, attack, pt) in attacking_units.iter() {
+                    let is_moving = if let Ok(cell) =
+                        world.entry_mut(*e).unwrap().get_component_mut::<GameCell>()
+                    {
+                        if !cell.is_moving() {
                             cell.stop_moving();
+                            false
+                        } else {
+                            true
+                        }
+                    } else {
+                        true
+                    };
+
+                    if !is_moving {
+                        if let Some(damage) = *attack {
+                            if let Ok(unit) =
+                                world.entry_mut(*e).unwrap().get_component_mut::<Unit>()
+                            {
+                                unit.reset_tic();
+                            }
+
+                            if let Ok(cell2) = world
+                                .entry_mut(*e2)
+                                .unwrap()
+                                .get_component_mut::<GameCell>()
+                            {
+                                cell2.set_harmed();
+                                cell2.move_to_attacker(*pt);
+                            }
+                            if let Ok(unit2) =
+                                world.entry_mut(*e2).unwrap().get_component_mut::<Unit>()
+                            {
+                                unit2.harm(damage);
+                            }
                         }
                     }
-                    if let Ok(unit) = world.entry_mut(*e).unwrap().get_component_mut::<Unit>() {
-                        unit.reset_tic();
-                    }
-                    if let Ok(cell2) = world
-                        .entry_mut(*e2)
-                        .unwrap()
-                        .get_component_mut::<GameCell>()
-                    {
-                        cell2.set_harmed();
-                    }
-                    if let Ok(unit2) = world.entry_mut(*e2).unwrap().get_component_mut::<Unit>() {
-                        unit2.harm(*dmg);
-                    }
                 }
-                for (e, pt) in moving_units.iter() {
+                for (e, pt2) in moving_units.iter() {
                     if let Ok(cell) = world.entry_mut(*e).unwrap().get_component_mut::<GameCell>() {
-                        cell.move_towards(*pt);
+                        cell.move_towards(*pt2);
                     }
                 }
             });
@@ -662,7 +684,7 @@ impl State {
     fn move_cells(&mut self, mode: Mode) {
         let mut query = <(Write<GameCell>, Write<Unit>)>::query();
 
-        for (cell, unit) in query.iter_mut(&mut self.world) {
+        for (cell, _) in query.iter_mut(&mut self.world) {
             if cell.selected() {
                 cell.move_pos(
                     Point::new(
@@ -671,7 +693,6 @@ impl State {
                     ),
                     mode,
                 );
-                unit.reset_tic();
             }
         }
     }
@@ -691,7 +712,6 @@ impl State {
 
         for (cell, _) in query.iter_mut(&mut self.world) {
             if cell.selected() {
-                cell.stop_moving();
                 cell.hold();
             }
         }
