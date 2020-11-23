@@ -24,3 +24,6 @@ A text-based sci-fi themed real-time strategy game made with Rust, Bracket-lib, 
 * <0-9> : Select the control group
 * Shift -> [f2-f4] : Create a camera hotkey
 * [f2-f4] : Move to a camera location
+
+## Screenshot
+![Game Screenshot](https://github.com/Maxgy/text-rts/blob/master/Screenshot.png?raw=true)
