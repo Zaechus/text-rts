@@ -301,15 +301,17 @@ impl State {
     }
 
     fn mouse_input(&mut self) {
-        if self.mouse.x() <= 0 {
-            self.scroll(Direction::W);
-        } else if self.mouse.x() >= self.window_size.0 as i32 - 1 {
-            self.scroll(Direction::E);
-        }
-        if self.mouse.y() <= 0 {
-            self.scroll(Direction::N);
-        } else if self.mouse.y() >= self.window_size.1 as i32 - 1 {
-            self.scroll(Direction::S);
+        if self.mouse.select_one() {
+            if self.mouse.x() <= 0 {
+                self.scroll(Direction::W);
+            } else if self.mouse.x() >= self.window_size.0 as i32 - 1 {
+                self.scroll(Direction::E);
+            }
+            if self.mouse.y() <= 0 {
+                self.scroll(Direction::N);
+            } else if self.mouse.y() >= self.window_size.1 as i32 - 1 {
+                self.scroll(Direction::S);
+            }
         }
 
         match self.mouse.click {
